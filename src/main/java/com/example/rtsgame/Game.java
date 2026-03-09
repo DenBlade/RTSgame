@@ -4,6 +4,7 @@ import com.example.rtsgame.map.MapManager;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.transform.Scale;
 import org.xml.sax.SAXException;
@@ -18,7 +19,7 @@ public class Game extends Group{
     Camera camera;
     double[] sceneSize;
 
-
+    InputManager inputManager;
     GameUpdateTimer updateTimer;
 
     double mapPixelWidth, mapPixelHeight;
@@ -27,6 +28,7 @@ public class Game extends Group{
         this.scene = scene;
 
         MapManager mapManager = new MapManager("RTSmap.tmx");
+        inputManager = new InputManager(scene);
 
         Canvas mapCanvas = mapManager.getCanvas();
         map = new Group(mapCanvas);
@@ -46,9 +48,6 @@ public class Game extends Group{
         camera.updateCameraTargetPoint(0, (int) -scene.getHeight());
         map.getTransforms().add(mapScaleTransform);
 
-
-        scene.setOnKeyPressed(event -> handleInput(event));
-
         scene.widthProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
         scene.heightProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
 
@@ -56,6 +55,26 @@ public class Game extends Group{
         updateTimer.start();
     }
     public void update(long deltaTime){
+        inputManager.update();
+        double moveX = 0;
+        double moveY = 0;
+        int step = 20;
+        if(inputManager.isPressed(KeyCode.A)) moveX += 1;
+        if(inputManager.isPressed(KeyCode.D)) moveX -= 1;
+        if(inputManager.isPressed(KeyCode.W)) moveY += 1;
+        if(inputManager.isPressed(KeyCode.S)) moveY -= 1;
+
+        //normalize input
+        double length = Math.sqrt(moveX * moveX + moveY * moveY);
+        if(length > 1){
+            moveX /= length;
+            moveY /= length;
+        }
+
+        camera.moveCamera(
+                moveX * Config.CAMERA_MOVEMENT_STEP,
+                moveY * Config.CAMERA_MOVEMENT_STEP
+        );
         camera.smoothCameraHandling(deltaTime/ 1000000000.0);
     }
 
@@ -70,14 +89,5 @@ public class Game extends Group{
 
         camera.updateCameraTargetPoint(0,0); // needed to update camera's target position because of the difference in map size
     }
-    private void handleInput(KeyEvent event){
-        switch (event.getCode()){
-            case A -> camera.moveCamera(20, 0);
-            case D -> camera.moveCamera(-20, 0);
-            case W -> camera.moveCamera(0, 20);
-            case S -> camera.moveCamera(0, -20);
-        }
-    }
-
 
 }

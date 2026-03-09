@@ -23,10 +23,10 @@ public class Camera extends Translate {
         setX(getX() + (cameraTargetPosX - getX()) * deltaTime * Config.CAMERA_MOVEMENT_SPEED);
         setY(getY() + (cameraTargetPosY - getY()) * deltaTime * Config.CAMERA_MOVEMENT_SPEED);
     }
-    public void moveCamera(int offsetX, int offsetY){
+    public void moveCamera(double offsetX, double offsetY){
         updateCameraTargetPoint(offsetX, offsetY);
     }
-    public void updateCameraTargetPoint(int offsetX, int offsetY){
+    public void updateCameraTargetPoint(double offsetX, double offsetY){
         updateOffsets();
 
         cameraTargetPosX = Utils.clamp(cameraTargetPosX + offsetX, -maxOffsetX, 0);
