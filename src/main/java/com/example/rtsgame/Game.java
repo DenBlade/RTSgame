@@ -1,16 +1,23 @@
 package com.example.rtsgame;
 
 import com.example.rtsgame.map.MapManager;
+import com.example.rtsgame.units.AnimationData;
+import com.example.rtsgame.units.AnimationType;
+import com.example.rtsgame.units.Unit;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.transform.Scale;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class Game extends Group{
     Group root;
@@ -23,9 +30,11 @@ public class Game extends Group{
     GameUpdateTimer updateTimer;
 
     double mapPixelWidth, mapPixelHeight;
+    List<Unit> playerUnits;
     public Game(Group root, Scene scene) throws ParserConfigurationException, IOException, SAXException {
         this.root = root;
         this.scene = scene;
+        playerUnits = new ArrayList<>();
 
         MapManager mapManager = new MapManager("RTSmap.tmx");
         inputManager = new InputManager(scene);
@@ -51,14 +60,36 @@ public class Game extends Group{
         scene.widthProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
         scene.heightProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
 
+        Unit swordsman = new Unit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM}, 20, 100,false, 32,32, 1.5);
+        playerUnits.add(swordsman);
+//        Unit swordsman2 = new Unit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM}, 30, 100, false, 32,32, 1.5);
+//        playerUnits.add(swordsman2);
+        map.getChildren().add(swordsman);
+//        map.getChildren().add(swordsman2);
+
         updateTimer = new GameUpdateTimer(this);
         updateTimer.start();
     }
     public void update(long deltaTime){
-        inputManager.update();
+
+        if(inputManager.wasMousePressed(MouseButton.SECONDARY)){
+            System.out.println("mouse click");
+            Iterator iterator = playerUnits.iterator();
+            while(iterator.hasNext()){
+                Unit unit = (Unit) iterator.next();
+                if(unit.isSelected()){
+                    System.out.println("selected");
+                    double[] mousePos = inputManager.getMouseClickPosition();
+                    unit.setTarget(mousePos[0], mousePos[1]);
+                }
+            }
+        }
+        for(Unit unit : playerUnits){
+            unit.moveSmooth(deltaTime/1e9);
+        }
+
         double moveX = 0;
         double moveY = 0;
-        int step = 20;
         if(inputManager.isPressed(KeyCode.A)) moveX += 1;
         if(inputManager.isPressed(KeyCode.D)) moveX -= 1;
         if(inputManager.isPressed(KeyCode.W)) moveY += 1;
@@ -76,6 +107,8 @@ public class Game extends Group{
                 moveY * Config.CAMERA_MOVEMENT_STEP
         );
         camera.smoothCameraHandling(deltaTime/ 1000000000.0);
+
+        inputManager.update();
     }
 
     private void updateMapScale(Scene scene, Scale scaleTransform) {
