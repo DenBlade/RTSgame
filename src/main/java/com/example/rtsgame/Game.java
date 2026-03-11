@@ -4,6 +4,7 @@ import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.units.AnimationData;
 import com.example.rtsgame.units.AnimationType;
 import com.example.rtsgame.units.Unit;
+import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -60,7 +61,7 @@ public class Game extends Group{
         scene.widthProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
         scene.heightProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
 
-        Unit swordsman = new Unit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM}, 20, 100,false, 32,32, 1.5);
+        Unit swordsman = new Unit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM}, 40, 100,false, 32,32, 1.5);
         playerUnits.add(swordsman);
 //        Unit swordsman2 = new Unit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM}, 30, 100, false, 32,32, 1.5);
 //        playerUnits.add(swordsman2);
@@ -73,14 +74,13 @@ public class Game extends Group{
     public void update(long deltaTime){
 
         if(inputManager.wasMousePressed(MouseButton.SECONDARY)){
-            System.out.println("mouse click");
             Iterator iterator = playerUnits.iterator();
             while(iterator.hasNext()){
                 Unit unit = (Unit) iterator.next();
                 if(unit.isSelected()){
-                    System.out.println("selected");
                     double[] mousePos = inputManager.getMouseClickPosition();
-                    unit.setTarget(mousePos[0], mousePos[1]);
+                    Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
+                    unit.setTarget(mapPoint.getX(), mapPoint.getY());
                 }
             }
         }
