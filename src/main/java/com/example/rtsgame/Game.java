@@ -61,7 +61,7 @@ public class Game extends Group{
         scene.widthProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
         scene.heightProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
 
-        Unit swordsman = new Unit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM}, 40, 100,false, 32,32, 1.5);
+        Unit swordsman = new Unit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM}, mapManager, 200, 100,false, 32,32, 1.5);
         playerUnits.add(swordsman);
 //        Unit swordsman2 = new Unit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM}, 30, 100, false, 32,32, 1.5);
 //        playerUnits.add(swordsman2);

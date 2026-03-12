@@ -1,6 +1,8 @@
 package com.example.rtsgame.units;
 
 import com.example.rtsgame.Config;
+import com.example.rtsgame.map.MapManager;
+import com.example.rtsgame.map.tiles.Tile;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.geometry.Rectangle2D;
@@ -31,10 +33,13 @@ public class Unit extends Group {
     private double targetX;
     private double targetY;
 
-    public Unit(String fileName, AnimationData[] animationData, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
+    private MapManager mapManager;
+
+    public Unit(String fileName, AnimationData[] animationData, MapManager mapManager, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
         this.spriteWidth = spriteWidth * scale;
         this.spriteHeight = spriteHeight * scale;
         this.ownByAI = ownByAI;
+        this.mapManager = mapManager;
         setCenterX(x);
         setBottomY(y);
         setTarget(x,y);
@@ -164,8 +169,38 @@ public class Unit extends Group {
         double dirX = dx / distance;
         double dirY = dy / distance;
 
-        setCenterX(getCenterX() + dirX * moveDistance);
-        setBottomY(getBottomY() + dirY * moveDistance);
+        double newX = getCenterX() + dirX * moveDistance;
+        double newY = getBottomY() + dirY * moveDistance;
+
+        int tileX = (int)(newX / Config.TILE_WIDTH);
+        int tileY = (int)(newY / Config.TILE_HEIGHT);
+        if(!mapManager.isTileTraversable(tileX, tileY)){
+            resolveTileCollision(newX, newY);
+        }
+        else{
+            setCenterX(newX);
+            setBottomY(newY);
+        }
+
+    }
+    private void resolveTileCollision(double newX, double newY) {
+
+        double oldX = getCenterX();
+        double oldY = getBottomY();
+
+        // try moving only X
+        if(mapManager.isTraversableAt(newX, oldY)){
+            setCenterX(newX);
+            return;
+        }
+
+        // try moving only Y
+        if(mapManager.isTraversableAt(oldX, newY)){
+            setBottomY(newY);
+            return;
+        }
+
+        // both blocked → stay
     }
     private double getCenterX(){
         return getLayoutX() + spriteWidth/2;

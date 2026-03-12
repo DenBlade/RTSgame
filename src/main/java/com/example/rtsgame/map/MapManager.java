@@ -198,4 +198,24 @@ public class MapManager {
             System.out.println();
         }
     }
+    public Tile getTile(int x, int y){
+        return tilesData[x][y];
+    }
+    public boolean isTileTraversable(int x, int y){
+        return tilesData[x][y].isTraversable();
+    }
+    public Tile[][] getTilesData(){
+        return tilesData;
+    }
+    public double[] convertToWorldCoordinates(int[] coords){
+        return new double[]{coords[0]*Config.TILE_WIDTH,coords[1]*Config.TILE_HEIGHT};
+    }
+    public int[] convertToTileCoordinates(double[] coords){
+        return new int[]{(int)coords[0]/Config.TILE_WIDTH,(int)coords[1]/Config.TILE_HEIGHT};
+    }
+    public boolean isTraversableAt(double x, double y){
+        int[] coords = convertToTileCoordinates(new double[]{x,y});
+        return isTileTraversable(coords[0],coords[1]);
+    }
+
 }
