@@ -24,6 +24,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MapManager {
     int mapWidth;
@@ -86,21 +88,23 @@ public class MapManager {
             }
             this.processLayer(tiles, tileFactory);
         }
-        //drawing PlayerCastle
-        gc.drawImage(castlePrefab.getImage(), Config.PLAYER_CASTLE_POS[0]*Config.TILE_WIDTH, Config.PLAYER_CASTLE_POS[1]*Config.TILE_HEIGHT);
-        //storing it in memory
-        CastleTile.incrementBuildingsCount();
-        final int playerCastleId = CastleTile.getBuildingsCount();
-        TileFactory playerCastleFactory = (x, y) -> new CastleTile(playerCastleId, x, y, false);
-        setTilesData(Config.PLAYER_CASTLE_POS[0], Config.PLAYER_CASTLE_POS[1], castlePrefab.getWidth(), castlePrefab.getHeight(), playerCastleFactory);
+//        //drawing PlayerCastle
+//        gc.drawImage(castlePrefab.getImage(), Config.PLAYER_CASTLE_POS[0]*Config.TILE_WIDTH, Config.PLAYER_CASTLE_POS[1]*Config.TILE_HEIGHT);
+//        //storing it in memory
+//        CastleTile.incrementBuildingsCount();
+//        final int playerCastleId = CastleTile.getBuildingsCount();
+//        TileFactory playerCastleFactory = (x, y) -> new CastleTile(playerCastleId, x, y, false);
+//        setTilesData(Config.PLAYER_CASTLE_POS[0], Config.PLAYER_CASTLE_POS[1], castlePrefab.getWidth(), castlePrefab.getHeight(), playerCastleFactory);
+        placeCastle(false, Config.PLAYER_CASTLE_POS[0], Config.PLAYER_CASTLE_POS[1]);
 
-        //drawing EnemyCastle
-        gc.drawImage(castlePrefab.getImage(), Config.ENEMY_CASTLE_POS[0]*Config.TILE_WIDTH, Config.ENEMY_CASTLE_POS[1]*Config.TILE_HEIGHT);
-        //storing it in memory
-        CastleTile.incrementBuildingsCount();
-        final int enemyCastleId = CastleTile.getBuildingsCount();
-        TileFactory enemyCastleFactory = (x, y) -> new CastleTile(enemyCastleId, x, y, true);
-        setTilesData(Config.ENEMY_CASTLE_POS[0], Config.ENEMY_CASTLE_POS[1], castlePrefab.getWidth(), castlePrefab.getHeight(), enemyCastleFactory);
+//        //drawing EnemyCastle
+//        gc.drawImage(castlePrefab.getImage(), Config.ENEMY_CASTLE_POS[0]*Config.TILE_WIDTH, Config.ENEMY_CASTLE_POS[1]*Config.TILE_HEIGHT);
+//        //storing it in memory
+//        CastleTile.incrementBuildingsCount();
+//        final int enemyCastleId = CastleTile.getBuildingsCount();
+//        TileFactory enemyCastleFactory = (x, y) -> new CastleTile(enemyCastleId, x, y, true);
+//        setTilesData(Config.ENEMY_CASTLE_POS[0], Config.ENEMY_CASTLE_POS[1], castlePrefab.getWidth(), castlePrefab.getHeight(), enemyCastleFactory);
+        placeCastle(true, Config.ENEMY_CASTLE_POS[0], Config.ENEMY_CASTLE_POS[1]);
 
     }
 
@@ -186,6 +190,15 @@ public class MapManager {
         canvas.snapshot(params, buildingImage);
         return new BuildingPrefab(buildingImage, mapWidth, mapHeight);
     }
+    public void placeCastle(boolean ownByAI, int tileX, int tileY){
+        //drawing PlayerCastle
+        gc.drawImage(castlePrefab.getImage(), tileX*Config.TILE_WIDTH, tileY*Config.TILE_HEIGHT);
+        //storing it in memory
+        CastleTile.incrementBuildingsCount();
+        final int playerCastleId = CastleTile.getBuildingsCount();
+        TileFactory playerCastleFactory = (x, y) -> new CastleTile(playerCastleId, x, y, ownByAI);
+        setTilesData(tileX, tileY, castlePrefab.getWidth(), castlePrefab.getHeight(), playerCastleFactory);
+    }
 
     public Canvas getCanvas(){
         return canvas;
@@ -198,8 +211,11 @@ public class MapManager {
             System.out.println();
         }
     }
-    public Tile getTile(int x, int y){
-        return tilesData[x][y];
+    public Tile getTile(int[] coords){
+        return tilesData[coords[0]][coords[1]];
+    }
+    public Tile getTileAt(double x, double y){
+        return getTile(convertToTileCoordinates(new double[]{x, y}));
     }
     public boolean isTileTraversable(int x, int y){
         return tilesData[x][y].isTraversable();
@@ -217,5 +233,15 @@ public class MapManager {
         int[] coords = convertToTileCoordinates(new double[]{x,y});
         return isTileTraversable(coords[0],coords[1]);
     }
-
+    public List<Tile> getAdjacentTiles(int x, int y){
+        List<Tile> list = new ArrayList<>();
+        if(tilesData[x-1][y].isTraversable()) list.add(tilesData[x-1][y]);
+        if(tilesData[x][y-1].isTraversable()) list.add(tilesData[x][y-1]);
+        if(tilesData[x+1][y].isTraversable()) list.add(tilesData[x+1][y]);
+        if(tilesData[x][y+1].isTraversable()) list.add(tilesData[x][y+1]);
+        return list;
+    }
+    public boolean isInBounds(int x, int y){
+        return (x >= 0 && x < mapWidth && y >= 0 && y < mapHeight);
+    }
 }

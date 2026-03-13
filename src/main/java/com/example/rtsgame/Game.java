@@ -1,22 +1,20 @@
 package com.example.rtsgame;
 
 import com.example.rtsgame.map.MapManager;
-import com.example.rtsgame.units.AnimationData;
-import com.example.rtsgame.units.AnimationType;
-import com.example.rtsgame.units.Unit;
+import com.example.rtsgame.map.tiles.Tile;
+import com.example.rtsgame.map.tiles.buildings.CastleTile;
+import com.example.rtsgame.units.*;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.transform.Scale;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -24,20 +22,22 @@ public class Game extends Group{
     Group root;
     Scene scene;
     Group map;
+    Tile[][] tilesData;
     Camera camera;
     double[] sceneSize;
 
     InputManager inputManager;
     GameUpdateTimer updateTimer;
+    GameWorld gameWorld;
 
     double mapPixelWidth, mapPixelHeight;
     List<Unit> playerUnits;
     public Game(Group root, Scene scene) throws ParserConfigurationException, IOException, SAXException {
         this.root = root;
         this.scene = scene;
-        playerUnits = new ArrayList<>();
 
         MapManager mapManager = new MapManager("RTSmap.tmx");
+        tilesData = mapManager.getTilesData();
         inputManager = new InputManager(scene);
 
         Canvas mapCanvas = mapManager.getCanvas();
@@ -46,6 +46,9 @@ public class Game extends Group{
         mapPixelWidth = mapCanvas.getWidth();
 
         root.getChildren().add(map);
+
+        gameWorld = new GameWorld(map, mapManager);
+        playerUnits = gameWorld.getPlayerUnits();
 
         Scale mapScaleTransform = new Scale();
         mapScaleTransform.setPivotX(0);
@@ -61,27 +64,42 @@ public class Game extends Group{
         scene.widthProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
         scene.heightProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
 
-        Unit swordsman = new Unit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM}, mapManager, 200, 100,false, 32,32, 1.5);
+        AttackUnit swordsman = AttackUnit.createSwordsman(mapManager, false, 200, 200);
         playerUnits.add(swordsman);
-//        Unit swordsman2 = new Unit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM}, 30, 100, false, 32,32, 1.5);
-//        playerUnits.add(swordsman2);
         map.getChildren().add(swordsman);
-//        map.getChildren().add(swordsman2);
+
+        WorkerUnit worker = WorkerUnit.createWorker(mapManager, false, 300, 200);
+        playerUnits.add(worker);
+        map.getChildren().add(worker);
 
         updateTimer = new GameUpdateTimer(this);
         updateTimer.start();
+
+
     }
     public void update(long deltaTime){
 
         if(inputManager.wasMousePressed(MouseButton.SECONDARY)){
+            double[] mousePos = inputManager.getMouseClickPosition();
+            Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
+            boolean settedTargetPoint = false;
+            //set target point for all selected units
             Iterator iterator = playerUnits.iterator();
             while(iterator.hasNext()){
                 Unit unit = (Unit) iterator.next();
                 if(unit.isSelected()){
-                    double[] mousePos = inputManager.getMouseClickPosition();
-                    Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
                     unit.setTarget(mapPoint.getX(), mapPoint.getY());
+                    settedTargetPoint = true;
                 }
+            }
+            if(settedTargetPoint){
+                return;
+            }
+
+            Tile clickedTile = gameWorld.getMapManager().getTileAt(mapPoint.getX(), mapPoint.getY());
+            if(clickedTile instanceof CastleTile){
+                CastleTile castleTile = (CastleTile) clickedTile;
+                castleTile.buildingFunction(gameWorld);
             }
         }
         for(Unit unit : playerUnits){

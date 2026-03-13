@@ -17,6 +17,12 @@ public class Tile {
     public double[] getWorldCoordinates() {
         return new double[] {this.x* Config.TILE_WIDTH, this.y*Config.TILE_HEIGHT};
     }
+    public static int[] convertToTileCoordinates(double[] coords){
+        return new int[]{(int)coords[0]/Config.TILE_WIDTH,(int)coords[1]/Config.TILE_HEIGHT};
+    }
+    public int[] getCoordinates() {
+        return new int[] {this.x,this.y};
+    }
     public int getX() {
         return x;
     }

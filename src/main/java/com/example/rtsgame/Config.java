@@ -17,4 +17,7 @@ public class Config {
 
     public static final AnimationData SWORDSMAN_IDLE_ANIM = new AnimationData(AnimationType.IDLE, 0, 4);
     public static final AnimationData SWORDSMAN_WALK_ANIM = new AnimationData(AnimationType.WALK, 1, 6);
+
+    public static final AnimationData WORKER_IDLE_ANIM = new AnimationData(AnimationType.IDLE, 0, 4);
+    public static final AnimationData WORKER_WALK_ANIM = new AnimationData(AnimationType.WALK, 3, 6);
 }

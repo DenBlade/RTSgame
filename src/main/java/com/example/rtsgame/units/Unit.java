@@ -23,9 +23,9 @@ public class Unit extends Group {
     private Image spriteSheet;
     private ImageView unitSprite;
     private double spriteWidth, spriteHeight;
-    private HashMap<AnimationType, AnimationData> animations;
-    private AnimationTimeline currentAnimation;
-    private int currentFrame;
+    protected HashMap<AnimationType, AnimationData> animations;
+    protected AnimationTimeline currentAnimation;
+    protected int currentFrame;
     private boolean ownByAI;
 
     private boolean isSelected = false;
@@ -33,7 +33,7 @@ public class Unit extends Group {
     private double targetX;
     private double targetY;
 
-    private MapManager mapManager;
+    protected MapManager mapManager;
 
     public Unit(String fileName, AnimationData[] animationData, MapManager mapManager, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
         this.spriteWidth = spriteWidth * scale;

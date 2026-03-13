@@ -1,6 +1,8 @@
 package com.example.rtsgame.map.tiles.buildings;
 
+import com.example.rtsgame.GameWorld;
 import com.example.rtsgame.map.tiles.Tile;
+
 
 public abstract class BuildingTile extends Tile {
     private static int buildingsCount = 0;
@@ -17,6 +19,10 @@ public abstract class BuildingTile extends Tile {
         buildingId = id;
         this.ownedByAI = ownedByAI;
     }
+    public boolean isOwnedByAI() {
+        return ownedByAI;
+    }
+    public abstract void buildingFunction(GameWorld gameWorld);
     public static int getBuildingsCount() {
         return buildingsCount;
     }
