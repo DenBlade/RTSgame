@@ -1,12 +1,16 @@
 package com.example.rtsgame.map.tiles.buildings;
 
 import com.example.rtsgame.GameWorld;
+import com.example.rtsgame.UIOptionBarHolder;
 import com.example.rtsgame.map.tiles.Tile;
 import com.example.rtsgame.units.WorkerUnit;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class CastleTile extends BuildingTile {
+public class CastleTile extends BuildingTile implements UIOptionBarHolder {
 
     public CastleTile(int id, int x, int y, boolean ownedByAI) {
         super(id, x, y, ownedByAI);
@@ -24,5 +28,14 @@ public class CastleTile extends BuildingTile {
             }
         }
 
+    }
+
+    @Override
+    public List<Node> getUI(GameWorld gameWorld) {
+        Button workerButton = new Button("Train Worker");
+        workerButton.setOnAction(e -> {buildingFunction(gameWorld); });
+        List<Node> ui = new ArrayList<>();
+        ui.add(workerButton);
+        return ui;
     }
 }

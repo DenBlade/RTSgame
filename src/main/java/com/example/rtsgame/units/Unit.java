@@ -2,13 +2,10 @@ package com.example.rtsgame.units;
 
 import com.example.rtsgame.Config;
 import com.example.rtsgame.map.MapManager;
-import com.example.rtsgame.map.tiles.Tile;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.*;
 import javafx.scene.input.MouseButton;
@@ -56,7 +53,7 @@ public class Unit extends Group {
 
         setPickOnBounds(false); //click is detected only if clicked on opaque pixels
 
-        setOnMouseClicked(this::handleMouseClick);
+//        setOnMouseClicked(this::handleMouseClick);
     }
     private void setupAnimations(AnimationData[] animationData) {
         animations = new HashMap<>();
@@ -94,14 +91,14 @@ public class Unit extends Group {
     private void handleMouseClick(MouseEvent event) {
         if(ownByAI) return;
         if(event.getButton() == MouseButton.PRIMARY)
-            selectUnit();
+            toogleUnitSelection();
     }
-    private void selectUnit(){
-        if(ownByAI) return;
+    public void toogleUnitSelection(){
         setSelected(!isSelected);
     }
 
     public void setSelected(boolean value) {
+        if(ownByAI) return;
         isSelected = value;
         toggleSelectionShadow();
     }
@@ -149,10 +146,8 @@ public class Unit extends Group {
 
         double distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance < Config.ERROR_TOLERANCE) {
-            setCurrentAnimation(AnimationType.IDLE);
-            setCenterX(targetX);
-            setBottomY(targetY);
+        if (hasReachedTarget()) {
+            achievedTarget();
             return;
         }
         //flip image if moving left
@@ -182,6 +177,20 @@ public class Unit extends Group {
             setBottomY(newY);
         }
 
+    }
+    protected void achievedTarget(){
+        setCurrentAnimation(AnimationType.IDLE);
+        setCenterX(targetX);
+        setBottomY(targetY);
+    }
+    public boolean hasReachedTarget(){
+
+        double dx = targetX - getCenterX();
+        double dy = targetY - getBottomY();
+
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        return distance < Config.ERROR_TOLERANCE;
     }
     private void resolveTileCollision(double newX, double newY) {
 

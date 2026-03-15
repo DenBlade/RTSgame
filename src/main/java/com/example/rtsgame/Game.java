@@ -2,12 +2,12 @@ package com.example.rtsgame;
 
 import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.map.tiles.Tile;
-import com.example.rtsgame.map.tiles.buildings.CastleTile;
 import com.example.rtsgame.units.*;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.transform.Scale;
@@ -15,7 +15,6 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 public class Game extends Group{
@@ -29,9 +28,14 @@ public class Game extends Group{
     InputManager inputManager;
     GameUpdateTimer updateTimer;
     GameWorld gameWorld;
-
+    BuildSystem buildSystem;
+    ImageView buildingPreview;
+    UIManager uiManager;
+    SelectionManager selectionManager;
     double mapPixelWidth, mapPixelHeight;
+
     List<Unit> playerUnits;
+    List<Unit> selectedUnits;
     public Game(Group root, Scene scene) throws ParserConfigurationException, IOException, SAXException {
         this.root = root;
         this.scene = scene;
@@ -48,7 +52,12 @@ public class Game extends Group{
         root.getChildren().add(map);
 
         gameWorld = new GameWorld(map, mapManager);
+        buildSystem = gameWorld.getBuildSystem();
         playerUnits = gameWorld.getPlayerUnits();
+        selectionManager = new SelectionManager(playerUnits);
+
+        uiManager = new UIManager(gameWorld, scene);
+        root.getChildren().add(uiManager);
 
         Scale mapScaleTransform = new Scale();
         mapScaleTransform.setPivotX(0);
@@ -61,6 +70,7 @@ public class Game extends Group{
         camera.updateCameraTargetPoint(0, (int) -scene.getHeight());
         map.getTransforms().add(mapScaleTransform);
 
+
         scene.widthProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
         scene.heightProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
 
@@ -72,34 +82,80 @@ public class Game extends Group{
         playerUnits.add(worker);
         map.getChildren().add(worker);
 
+        selectedUnits = selectionManager.getSelectedPlayerUnits();
+
         updateTimer = new GameUpdateTimer(this);
         updateTimer.start();
 
 
     }
     public void update(long deltaTime){
-
-        if(inputManager.wasMousePressed(MouseButton.SECONDARY)){
-            double[] mousePos = inputManager.getMouseClickPosition();
+        if(buildSystem.isBuilding()){
+            double[] mousePos = inputManager.getMousePosition();
             Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
-            boolean settedTargetPoint = false;
-            //set target point for all selected units
-            Iterator iterator = playerUnits.iterator();
-            while(iterator.hasNext()){
-                Unit unit = (Unit) iterator.next();
-                if(unit.isSelected()){
-                    unit.setTarget(mapPoint.getX(), mapPoint.getY());
-                    settedTargetPoint = true;
+            int[] temp = MapManager.convertToTileCoordinates(new double[]{mapPoint.getX(), mapPoint.getY()});
+            double[] previewPos = MapManager.convertToWorldCoordinates(temp);
+            ImageView view = buildSystem.getPreview();
+            view.setLayoutX(previewPos[0]);
+            view.setLayoutY(previewPos[1]);
+        }
+
+        if(selectedUnits.size() == 1){
+            if(selectedUnits.get(0) instanceof WorkerUnit unit){
+                if(unit.isAssignedBuilding() && unit.hasReachedTarget()){
+                    unit.setAssignedBuilding(false);
+                    gameWorld.getBuildSystem().placeBuilding(unit.getBuildingPositionX(), unit.getBuildingPositionY());
                 }
             }
-            if(settedTargetPoint){
+        }
+
+
+        if(inputManager.wasMousePressed(MouseButton.PRIMARY)){
+            double[] mousePos = inputManager.getMouseClickPosition();
+            Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
+
+            Unit clickedUnit = inputManager.getClickedUnit();
+
+            if(clickedUnit != null){
+                clickedUnit.toogleUnitSelection();
+            } else {
+                if(!buildSystem.isBuilding()){
+                    uiManager.disableOptionsBar();
+                    // clicked ground → deselect all
+                    for(Unit unit : playerUnits){
+                        unit.setSelected(false);
+                    }
+                }
+            }
+
+            selectedUnits = selectionManager.getSelectedPlayerUnits();
+            if(selectedUnits.size() == 1){
+                if(selectedUnits.get(0) instanceof UIOptionBarHolder unitWithUI){
+                    System.out.println("One selected");
+                    uiManager.enableOptionsBar(unitWithUI);
+                }
+            }
+            else{
+                uiManager.disableOptionsBar();
+            }
+
+            if(gameWorld.getBuildSystem().isBuilding()){
+                WorkerUnit unit = (WorkerUnit) selectedUnits.get(0);
+                unit.buildAt(mapPoint.getX(), mapPoint.getY());
                 return;
             }
 
             Tile clickedTile = gameWorld.getMapManager().getTileAt(mapPoint.getX(), mapPoint.getY());
-            if(clickedTile instanceof CastleTile){
-                CastleTile castleTile = (CastleTile) clickedTile;
-                castleTile.buildingFunction(gameWorld);
+            if (clickedTile instanceof UIOptionBarHolder castleTile) {
+                uiManager.enableOptionsBar(castleTile);
+            }
+        }
+        if(inputManager.wasMousePressed(MouseButton.SECONDARY)){
+            double[] mousePos = inputManager.getMouseClickPosition();
+            Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
+
+            for(Unit unit : selectedUnits){
+                unit.setTarget(mapPoint.getX(), mapPoint.getY());
             }
         }
         for(Unit unit : playerUnits){

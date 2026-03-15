@@ -6,6 +6,7 @@ import com.example.rtsgame.map.tiles.ResourceTile;
 import com.example.rtsgame.map.tiles.Tile;
 import com.example.rtsgame.map.tiles.TileFactory;
 import com.example.rtsgame.map.tiles.buildings.BuildingTile;
+import com.example.rtsgame.map.tiles.buildings.BuildingType;
 import com.example.rtsgame.map.tiles.buildings.CastleTile;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
@@ -199,6 +200,14 @@ public class MapManager {
         TileFactory playerCastleFactory = (x, y) -> new CastleTile(playerCastleId, x, y, ownByAI);
         setTilesData(tileX, tileY, castlePrefab.getWidth(), castlePrefab.getHeight(), playerCastleFactory);
     }
+    public BuildingPrefab getBuildingPrefab(BuildingType buildingType){
+        switch(buildingType){
+            case CASTLE -> {
+                return castlePrefab;
+            }
+        }
+        return null;
+    }
 
     public Canvas getCanvas(){
         return canvas;
@@ -214,6 +223,9 @@ public class MapManager {
     public Tile getTile(int[] coords){
         return tilesData[coords[0]][coords[1]];
     }
+    public Tile getTile(int x, int y){
+        return tilesData[x][y];
+    }
     public Tile getTileAt(double x, double y){
         return getTile(convertToTileCoordinates(new double[]{x, y}));
     }
@@ -223,10 +235,10 @@ public class MapManager {
     public Tile[][] getTilesData(){
         return tilesData;
     }
-    public double[] convertToWorldCoordinates(int[] coords){
+    public static double[] convertToWorldCoordinates(int[] coords){
         return new double[]{coords[0]*Config.TILE_WIDTH,coords[1]*Config.TILE_HEIGHT};
     }
-    public int[] convertToTileCoordinates(double[] coords){
+    public static int[] convertToTileCoordinates(double[] coords){
         return new int[]{(int)coords[0]/Config.TILE_WIDTH,(int)coords[1]/Config.TILE_HEIGHT};
     }
     public boolean isTraversableAt(double x, double y){

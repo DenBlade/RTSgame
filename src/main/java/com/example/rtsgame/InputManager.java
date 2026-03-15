@@ -1,5 +1,8 @@
 package com.example.rtsgame;
 
+import com.example.rtsgame.map.tiles.buildings.BuildingTile;
+import com.example.rtsgame.units.Unit;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -18,6 +21,9 @@ public class InputManager {
     private final Set<MouseButton> previousMouseButtons = new HashSet<>();
 
     private final double[] mouseClickPosition = new double[2];
+    private final double[] mousePosition = new double[2];
+
+    private Node clickedObject;
 
     public InputManager(Scene scene) {
 
@@ -27,12 +33,19 @@ public class InputManager {
         scene.addEventHandler(KeyEvent.KEY_RELEASED,
                 e -> currentKeys.remove(e.getCode()));
 
-        scene.addEventHandler(MouseEvent.MOUSE_PRESSED,
-                e -> {
-                    currentMouseButtons.add(e.getButton());
-                    mouseClickPosition[0] = e.getX();
-                    mouseClickPosition[1] = e.getY();
-                });
+        scene.addEventHandler(MouseEvent.MOUSE_PRESSED, e -> {
+            currentMouseButtons.add(e.getButton());
+
+            mouseClickPosition[0] = e.getX();
+            mouseClickPosition[1] = e.getY();
+
+            clickedObject = e.getPickResult().getIntersectedNode();
+        });
+
+        scene.addEventHandler(MouseEvent.MOUSE_MOVED, e -> {
+            mousePosition[0] = e.getSceneX();
+            mousePosition[1] = e.getSceneY();
+        });
 
         scene.addEventHandler(MouseEvent.MOUSE_RELEASED,
                 e -> currentMouseButtons.remove(e.getButton()));
@@ -71,4 +84,25 @@ public class InputManager {
     public double[] getMouseClickPosition() {
         return mouseClickPosition;
     }
+    public double[] getMousePosition() {
+        return mousePosition;
+    }
+    public Unit getClickedUnit() {
+        Node node = clickedObject;
+
+        while (node != null) {
+            if (node instanceof Unit unit) {
+                return unit;
+            }
+
+            if (node instanceof javafx.scene.Node n) {
+                node = n.getParent();
+            } else {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
 }
