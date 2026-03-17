@@ -28,9 +28,9 @@ public class WorkerUnit extends Unit implements UIOptionBarHolder {
     }
 
     @Override
-    public void setTarget(double targetX, double targetY) {
-        super.setTarget(targetX, targetY);
-        assignedBuilding = false;
+    public void moveTo(double targetX, double targetY) {
+        super.moveTo(targetX, targetY);
+        setAssignedBuilding(false);
     }
 
     public void setAssignedBuilding(boolean assignedBuilding) {
@@ -41,7 +41,7 @@ public class WorkerUnit extends Unit implements UIOptionBarHolder {
         int[] tileCoords = MapManager.convertToTileCoordinates(new double[]{x, y});
         double[] layoutCoords = MapManager.convertToWorldCoordinates(tileCoords);
 
-        setTarget(layoutCoords[0]-10, layoutCoords[1]-10);
+        moveTo(layoutCoords[0]-10, layoutCoords[1]-10);
         buildingPositionX = tileCoords[0];
         buildingPositionY = tileCoords[1];
         assignedBuilding = true;

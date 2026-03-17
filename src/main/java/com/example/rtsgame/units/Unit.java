@@ -1,7 +1,9 @@
 package com.example.rtsgame.units;
 
 import com.example.rtsgame.Config;
+import com.example.rtsgame.Utils;
 import com.example.rtsgame.map.MapManager;
+import com.example.rtsgame.units.pathfinding.Pathfinding;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.geometry.Rectangle2D;
@@ -13,7 +15,10 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 public class Unit extends Group {
 
@@ -26,11 +31,14 @@ public class Unit extends Group {
     private boolean ownByAI;
 
     private boolean isSelected = false;
-
-    private double targetX;
-    private double targetY;
+    private boolean reachedTarget = false;
 
     protected MapManager mapManager;
+
+    private Pathfinding pathfinding;
+    private List<double[]> path = new ArrayList<>();
+    private int pathIndex;
+    private double offsetInsideTile;
 
     public Unit(String fileName, AnimationData[] animationData, MapManager mapManager, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
         this.spriteWidth = spriteWidth * scale;
@@ -39,7 +47,8 @@ public class Unit extends Group {
         this.mapManager = mapManager;
         setCenterX(x);
         setBottomY(y);
-        setTarget(x,y);
+
+        pathfinding = new Pathfinding(mapManager);
 
         spriteSheet = new Image(getClass().getResourceAsStream(fileName));
         spriteSheet = resample(spriteSheet, scale);
@@ -53,7 +62,6 @@ public class Unit extends Group {
 
         setPickOnBounds(false); //click is detected only if clicked on opaque pixels
 
-//        setOnMouseClicked(this::handleMouseClick);
     }
     private void setupAnimations(AnimationData[] animationData) {
         animations = new HashMap<>();
@@ -88,11 +96,6 @@ public class Unit extends Group {
         }
     }
 
-    private void handleMouseClick(MouseEvent event) {
-        if(ownByAI) return;
-        if(event.getButton() == MouseButton.PRIMARY)
-            toogleUnitSelection();
-    }
     public void toogleUnitSelection(){
         setSelected(!isSelected);
     }
@@ -135,21 +138,152 @@ public class Unit extends Group {
 
         return output;
     }
-    public void setTarget(double targetX, double targetY) {
-        this.targetX = targetX;
-        this.targetY = targetY;
+    public void moveTo(double targetX, double targetY) {
+        int[] start = mapManager.convertToTileCoordinates(
+                new double[]{getCenterX(), getBottomY()}
+        );
+
+        int[] end = mapManager.convertToTileCoordinates(
+                new double[]{targetX, targetY}
+        );
+        List<int[]> tilePath = pathfinding.findPath(
+                start[0], start[1],
+                end[0], end[1]
+        );
+        path.clear();
+
+        Iterator<int[]> iterator = tilePath.iterator();
+        while (iterator.hasNext()) {
+            int[] tile = iterator.next();
+            double offsetX = Config.TILE_WIDTH / 2.0;
+            double offsetY = Config.TILE_HEIGHT / 2.0;
+
+            path.add(new double[]{
+                    tile[0] * Config.TILE_WIDTH + offsetX,
+                    tile[1] * Config.TILE_HEIGHT + offsetY
+            });
+        }
+
+        if(!path.isEmpty()){
+            path.add(new double[]{targetX, targetY});
+            reachedTarget = false;
+        }
+        path = smoothPath(path);
+        pathIndex = 1; //if we start from 0 then unit centers himself in his starting tile
+
     }
-    public void moveSmooth(double deltaTime) {
-        double dx = targetX - getCenterX();
-        double dy = targetY - getBottomY();
+    public boolean hasLineOfSight(double x1, double y1, double x2, double y2){
 
+        double dx = x2 - x1;
+        double dy = y2 - y1;
 
-        double distance = Math.sqrt(dx * dx + dy * dy);
+        int steps = (int)(Math.max(Math.abs(dx), Math.abs(dy)) / 2);
 
-        if (hasReachedTarget()) {
+        for(int i = 0; i <= steps; i++){
+
+            double t = i / (double) steps;
+
+            double x = x1 + dx * t;
+            double y = y1 + dy * t;
+
+            if(!mapManager.isTraversableAt(x, y)){
+                return false;
+            }
+        }
+
+        return true;
+    }
+//    public List<double[]> smoothPath(List<double[]> path){
+//
+//        List<double[]> result = new ArrayList<>();
+//
+//        int current = 0;
+//
+//        result.add(path.get(0));
+//
+//        while(current < path.size() - 1){
+//
+//            int next = current + 1;
+//
+//            for(int i = current + 2; i < path.size(); i++){
+//                if(hasLineOfSight(
+//                        path.get(current)[0], path.get(current)[1],
+//                        path.get(i)[0], path.get(i)[1]
+//                )){
+//                    next = i;
+//                } else {
+//                    break;
+//                }
+//            }
+//
+//            result.add(path.get(next));
+//            current = next;
+//        }
+//
+//        return result;
+//    }
+    public List<double[]> smoothPath(List<double[]> path){
+
+        List<double[]> result = new ArrayList<>();
+
+        int i = 0;
+
+        while(i < path.size()-1){
+
+            result.add(path.get(i));
+
+            int j = path.size() - 1;
+
+            for(; j > i; j--){
+                if(hasLineOfSight(
+                        path.get(i)[0], path.get(i)[1],
+                        path.get(j)[0], path.get(j)[1]
+                )){
+                    break;
+                }
+            }
+
+            i = j;
+        }
+        if(!result.isEmpty()){
+            result.add(path.getLast());
+        }
+        return result;
+    }
+
+    public void update(double delta){
+
+        if(pathIndex >= path.size()) {
+            setCurrentAnimation(AnimationType.IDLE);
             achievedTarget();
             return;
         }
+
+        double[] target = path.get(pathIndex);
+        moveSmooth(target[0], target[1], delta);
+
+        if(isCloseTo(target[0], target[1])){
+            System.out.println("x: " + target[0] + " y: " + target[1]);
+            pathIndex++;
+        }
+    }
+    private boolean isCloseTo(double targetX, double targetY) {
+
+        double dx = targetX - getCenterX();
+        double dy = targetY - getBottomY();
+
+        double distanceSquared = dx * dx + dy * dy;
+
+        double threshold = 1;
+
+        return distanceSquared < threshold * threshold;
+    }
+    public void moveSmooth(double targetX, double targetY, double deltaTime) {
+        double dx = targetX - getCenterX();
+        double dy = targetY - getBottomY();
+
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
         //flip image if moving left
         if(dx<0){
             unitSprite.setScaleX(-1);
@@ -180,17 +314,10 @@ public class Unit extends Group {
     }
     protected void achievedTarget(){
         setCurrentAnimation(AnimationType.IDLE);
-        setCenterX(targetX);
-        setBottomY(targetY);
+        this.reachedTarget = true;
     }
     public boolean hasReachedTarget(){
-
-        double dx = targetX - getCenterX();
-        double dy = targetY - getBottomY();
-
-        double distance = Math.sqrt(dx * dx + dy * dy);
-
-        return distance < Config.ERROR_TOLERANCE;
+        return reachedTarget;
     }
     private void resolveTileCollision(double newX, double newY) {
 

@@ -71,8 +71,14 @@ public class Game extends Group{
         map.getTransforms().add(mapScaleTransform);
 
 
-        scene.widthProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
-        scene.heightProperty().addListener((obs, oldVal, newVal) -> updateMapScale(scene, mapScaleTransform));
+        scene.widthProperty().addListener((obs, oldVal, newVal) -> {
+            updateMapScale(scene, mapScaleTransform);
+            uiManager.setLayout();
+        });
+        scene.heightProperty().addListener((obs, oldVal, newVal) -> {
+            updateMapScale(scene, mapScaleTransform);
+            uiManager.setLayout();
+        });
 
         AttackUnit swordsman = AttackUnit.createSwordsman(mapManager, false, 200, 200);
         playerUnits.add(swordsman);
@@ -102,6 +108,7 @@ public class Game extends Group{
 
         if(selectedUnits.size() == 1){
             if(selectedUnits.get(0) instanceof WorkerUnit unit){
+                System.out.println("");
                 if(unit.isAssignedBuilding() && unit.hasReachedTarget()){
                     unit.setAssignedBuilding(false);
                     gameWorld.getBuildSystem().placeBuilding(unit.getBuildingPositionX(), unit.getBuildingPositionY());
@@ -140,7 +147,7 @@ public class Game extends Group{
             }
 
             if(gameWorld.getBuildSystem().isBuilding()){
-                WorkerUnit unit = (WorkerUnit) selectedUnits.get(0);
+                WorkerUnit unit = (WorkerUnit) selectedUnits.getFirst();
                 unit.buildAt(mapPoint.getX(), mapPoint.getY());
                 return;
             }
@@ -153,13 +160,13 @@ public class Game extends Group{
         if(inputManager.wasMousePressed(MouseButton.SECONDARY)){
             double[] mousePos = inputManager.getMouseClickPosition();
             Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
-
+            System.out.println("MouseX: " + mousePos[0] + " " + mousePos[1]);
             for(Unit unit : selectedUnits){
-                unit.setTarget(mapPoint.getX(), mapPoint.getY());
+                unit.moveTo(mapPoint.getX(), mapPoint.getY());
             }
         }
         for(Unit unit : playerUnits){
-            unit.moveSmooth(deltaTime/1e9);
+            unit.update(deltaTime/1e9);
         }
 
         double moveX = 0;
