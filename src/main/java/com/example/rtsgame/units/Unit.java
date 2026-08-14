@@ -1,8 +1,9 @@
 package com.example.rtsgame.units;
 
 import com.example.rtsgame.Config;
-import com.example.rtsgame.Utils;
 import com.example.rtsgame.map.MapManager;
+import com.example.rtsgame.statemachine.IdleState;
+import com.example.rtsgame.statemachine.StateMachine;
 import com.example.rtsgame.units.pathfinding.Pathfinding;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -10,8 +11,6 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.*;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 
@@ -28,25 +27,32 @@ public class Unit extends Group {
     protected HashMap<AnimationType, AnimationData> animations;
     protected AnimationTimeline currentAnimation;
     protected int currentFrame;
-    private boolean ownByAI;
 
     private boolean isSelected = false;
     private boolean reachedTarget = false;
 
     protected MapManager mapManager;
 
+    private StateMachine<Unit> stateMachine;
+    private boolean ownByAI;
+
     private Pathfinding pathfinding;
-    private List<double[]> path = new ArrayList<>();
-    private int pathIndex;
+    public List<double[]> path = new ArrayList<>();
+    public int pathIndex;
     private double offsetInsideTile;
 
-    public Unit(String fileName, AnimationData[] animationData, MapManager mapManager, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
+    protected int health;
+
+    public Unit(String fileName, AnimationData[] animationData, MapManager mapManager, int health, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
         this.spriteWidth = spriteWidth * scale;
         this.spriteHeight = spriteHeight * scale;
         this.ownByAI = ownByAI;
         this.mapManager = mapManager;
+        this.health = health;
         setCenterX(x);
         setBottomY(y);
+
+        stateMachine = new StateMachine(this, new IdleState());
 
         pathfinding = new Pathfinding(mapManager);
 
@@ -69,7 +75,7 @@ public class Unit extends Group {
             animations.put(animationData[i].getType(), animationData[i]);
         }
     }
-    private void setCurrentAnimation(AnimationType type) {
+    public void setCurrentAnimation(AnimationType type) {
         AnimationData animationData = animations.get(type);
         if (animationData != null) {
             if(currentAnimation == null) {
@@ -193,35 +199,6 @@ public class Unit extends Group {
 
         return true;
     }
-//    public List<double[]> smoothPath(List<double[]> path){
-//
-//        List<double[]> result = new ArrayList<>();
-//
-//        int current = 0;
-//
-//        result.add(path.get(0));
-//
-//        while(current < path.size() - 1){
-//
-//            int next = current + 1;
-//
-//            for(int i = current + 2; i < path.size(); i++){
-//                if(hasLineOfSight(
-//                        path.get(current)[0], path.get(current)[1],
-//                        path.get(i)[0], path.get(i)[1]
-//                )){
-//                    next = i;
-//                } else {
-//                    break;
-//                }
-//            }
-//
-//            result.add(path.get(next));
-//            current = next;
-//        }
-//
-//        return result;
-//    }
     public List<double[]> smoothPath(List<double[]> path){
 
         List<double[]> result = new ArrayList<>();
@@ -251,23 +228,10 @@ public class Unit extends Group {
         return result;
     }
 
-    public void update(double delta){
-
-        if(pathIndex >= path.size()) {
-            setCurrentAnimation(AnimationType.IDLE);
-            achievedTarget();
-            return;
-        }
-
-        double[] target = path.get(pathIndex);
-        moveSmooth(target[0], target[1], delta);
-
-        if(isCloseTo(target[0], target[1])){
-            System.out.println("x: " + target[0] + " y: " + target[1]);
-            pathIndex++;
-        }
+    public void update(double delta) {
+        stateMachine.update(delta);
     }
-    private boolean isCloseTo(double targetX, double targetY) {
+    public boolean isCloseTo(double targetX, double targetY) {
 
         double dx = targetX - getCenterX();
         double dy = targetY - getBottomY();
@@ -312,7 +276,7 @@ public class Unit extends Group {
         }
 
     }
-    protected void achievedTarget(){
+    public void achievedTarget(){
         setCurrentAnimation(AnimationType.IDLE);
         this.reachedTarget = true;
     }

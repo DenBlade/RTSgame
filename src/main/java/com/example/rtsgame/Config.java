@@ -20,4 +20,8 @@ public class Config {
 
     public static final AnimationData WORKER_IDLE_ANIM = new AnimationData(AnimationType.IDLE, 0, 4);
     public static final AnimationData WORKER_WALK_ANIM = new AnimationData(AnimationType.WALK, 3, 6);
+
+    public static final int SWORDSMAN_MAX_HEALTH = 7;
+
+    public static final int WORKER_MAX_HEALTH = 3;
 }

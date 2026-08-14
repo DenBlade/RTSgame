@@ -27,13 +27,7 @@ public class GameWorld {
         map.getChildren().add(unit);
     }
     public void placeBuilding(BuildingType type, int tileX, int tileY){
-
-        switch(type){
-            case CASTLE -> {
-                mapManager.placeCastle(false, tileX, tileY);
-            }
-        }
-
+        mapManager.placeBuilding(type, false, tileX, tileY);
     }
 
     public List<Unit> getPlayerUnits(){

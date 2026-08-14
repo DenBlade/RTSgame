@@ -16,8 +16,7 @@ public class CastleTile extends BuildingTile implements UIOptionBarHolder {
         super(id, x, y, ownedByAI);
     }
 
-    @Override
-    public void buildingFunction(GameWorld gameWorld) {
+    private void spawnWorker(GameWorld gameWorld) {
         List<Tile> adjacent = gameWorld.getMapManager().getAdjacentTiles(x, y);
         for(Tile tile : adjacent) {
             if(tile.isTraversable()){
@@ -33,7 +32,7 @@ public class CastleTile extends BuildingTile implements UIOptionBarHolder {
     @Override
     public List<Node> getUI(GameWorld gameWorld) {
         Button workerButton = new Button("Train Worker");
-        workerButton.setOnAction(e -> {buildingFunction(gameWorld); });
+        workerButton.setOnAction(e -> {spawnWorker(gameWorld); });
         List<Node> ui = new ArrayList<>();
         ui.add(workerButton);
         return ui;

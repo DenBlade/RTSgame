@@ -18,13 +18,13 @@ public class WorkerUnit extends Unit implements UIOptionBarHolder {
     private int buildingPositionX;
     private int buildingPositionY;
 
-    public WorkerUnit(String fileName, AnimationData[] animationData, MapManager mapManager, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
-        super(fileName, animationData, mapManager, x, y, ownByAI, spriteWidth, spriteHeight, scale);
+    public WorkerUnit(String fileName, AnimationData[] animationData, MapManager mapManager, int health, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
+        super(fileName, animationData, mapManager, health, x, y, ownByAI, spriteWidth, spriteHeight, scale);
         assignedBuilding = false;
     }
 
     public static WorkerUnit createWorker(MapManager mapManager, boolean ownByAI, double x, double y) {
-        return new WorkerUnit("/units/worker/MiniMiner.png", new AnimationData[] {Config.WORKER_IDLE_ANIM, Config.WORKER_WALK_ANIM}, mapManager, x, y, ownByAI, 32, 32, 1.5);
+        return new WorkerUnit("/units/worker/MiniMiner.png", new AnimationData[] {Config.WORKER_IDLE_ANIM, Config.WORKER_WALK_ANIM}, mapManager, Config.WORKER_MAX_HEALTH, x, y, ownByAI, 32, 32, 1.5);
     }
 
     @Override
@@ -70,8 +70,19 @@ public class WorkerUnit extends Unit implements UIOptionBarHolder {
                 buildSystem.startBuilding(BuildingType.CASTLE);
             }
         });
+        Button buildBarracks = new Button("Build barracks");
+        buildBarracks.setOnAction(e -> {
+            BuildSystem buildSystem = gameWorld.getBuildSystem();
+            if(buildSystem.isBuilding()){
+                buildSystem.stopBuilding();
+            }
+            else{
+                buildSystem.startBuilding(BuildingType.BARRACKS);
+            }
+        });
         List<Node> ui = new ArrayList<>();
         ui.add(buildCastle);
+        ui.add(buildBarracks);
         return ui;
     }
 }

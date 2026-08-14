@@ -1,7 +1,8 @@
 package com.example.rtsgame.map.tiles.buildings;
 
 public enum BuildingType {
-    CASTLE(2,2);
+    CASTLE(2,2),
+    BARRACKS(1,1);
 
     private final int width;
     private final int height;

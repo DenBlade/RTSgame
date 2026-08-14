@@ -108,7 +108,6 @@ public class Game extends Group{
 
         if(selectedUnits.size() == 1){
             if(selectedUnits.get(0) instanceof WorkerUnit unit){
-                System.out.println("");
                 if(unit.isAssignedBuilding() && unit.hasReachedTarget()){
                     unit.setAssignedBuilding(false);
                     gameWorld.getBuildSystem().placeBuilding(unit.getBuildingPositionX(), unit.getBuildingPositionY());
@@ -136,11 +135,8 @@ public class Game extends Group{
             }
 
             selectedUnits = selectionManager.getSelectedPlayerUnits();
-            if(selectedUnits.size() == 1){
-                if(selectedUnits.get(0) instanceof UIOptionBarHolder unitWithUI){
-                    System.out.println("One selected");
-                    uiManager.enableOptionsBar(unitWithUI);
-                }
+            if(selectedUnits.size() == 1 && selectedUnits.get(0) instanceof UIOptionBarHolder unitWithUI){
+                uiManager.enableOptionsBar(unitWithUI);
             }
             else{
                 uiManager.disableOptionsBar();

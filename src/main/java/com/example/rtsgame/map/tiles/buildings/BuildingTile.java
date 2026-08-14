@@ -22,7 +22,6 @@ public abstract class BuildingTile extends Tile {
     public boolean isOwnedByAI() {
         return ownedByAI;
     }
-    public abstract void buildingFunction(GameWorld gameWorld);
     public static int getBuildingsCount() {
         return buildingsCount;
     }
