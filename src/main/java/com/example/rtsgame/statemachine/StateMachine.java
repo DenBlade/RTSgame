@@ -11,7 +11,6 @@ public class StateMachine<T> {
 
         current.enter(owner);
     }
-
     public void update(double delta) {
 
         State<T> next = current.update(owner, delta);

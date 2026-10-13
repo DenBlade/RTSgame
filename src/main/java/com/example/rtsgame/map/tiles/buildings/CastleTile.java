@@ -3,7 +3,7 @@ package com.example.rtsgame.map.tiles.buildings;
 import com.example.rtsgame.GameWorld;
 import com.example.rtsgame.UIOptionBarHolder;
 import com.example.rtsgame.map.tiles.Tile;
-import com.example.rtsgame.units.WorkerUnit;
+import com.example.rtsgame.units.workerunit.WorkerUnit;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 

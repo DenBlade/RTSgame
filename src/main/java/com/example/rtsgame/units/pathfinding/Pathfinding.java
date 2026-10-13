@@ -1,5 +1,6 @@
 package com.example.rtsgame.units.pathfinding;
 
+import com.example.rtsgame.Config;
 import com.example.rtsgame.map.MapManager;
 
 import java.util.ArrayList;
@@ -63,6 +64,36 @@ public class Pathfinding {
         }
 
         return new ArrayList<>(); // no path
+    }
+    public int[] findNearestTraversableTile(int startX, int startY){
+        boolean[][] visited = new boolean[mapManager.mapWidth][mapManager.mapHeight];
+        java.util.Queue<int[]> queue = new java.util.ArrayDeque<>();
+
+        queue.add(new int[]{startX, startY});
+        visited[startX][startY] = true;
+        while (!queue.isEmpty()) {
+            int[] current = queue.poll();
+            int x = current[0];
+            int y = current[1];
+
+            if (mapManager.isTileTraversable(x, y)) {
+                return new int[]{x, y};
+            }
+
+            for (int[] direction : getDirections()) {
+                int nx = x + direction[0];
+                int ny = y + direction[1];
+                if (!mapManager.isInBounds(nx, ny)) {
+                    continue;
+                }
+                if (visited[nx][ny]) {
+                    continue;
+                }
+                visited[nx][ny] = true;
+                queue.add(new int[]{nx, ny});
+            }
+        }
+        return null;
     }
     private double heuristic(int x1, int y1, int x2, int y2){
         return Math.abs(x1 - x2) + Math.abs(y1 - y2); // Manhattan

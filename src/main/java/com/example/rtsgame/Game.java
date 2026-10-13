@@ -3,13 +3,19 @@ package com.example.rtsgame;
 import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.map.tiles.Tile;
 import com.example.rtsgame.units.*;
+import com.example.rtsgame.units.pathfinding.Pathfinding;
+import com.example.rtsgame.units.workerunit.WorkerUnit;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.effect.Blend;
+import javafx.scene.effect.BlendMode;
+import javafx.scene.effect.ColorInput;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
+import javafx.scene.paint.Color;
 import javafx.scene.transform.Scale;
 import org.xml.sax.SAXException;
 
@@ -81,77 +87,82 @@ public class Game extends Group{
         });
 
         AttackUnit swordsman = AttackUnit.createSwordsman(mapManager, false, 200, 200);
-        playerUnits.add(swordsman);
-        map.getChildren().add(swordsman);
+        gameWorld.spawnUnit(swordsman);
 
         WorkerUnit worker = WorkerUnit.createWorker(mapManager, false, 300, 200);
-        playerUnits.add(worker);
-        map.getChildren().add(worker);
+        gameWorld.spawnUnit(worker);
 
         selectedUnits = selectionManager.getSelectedPlayerUnits();
 
         updateTimer = new GameUpdateTimer(this);
         updateTimer.start();
 
-
+        Pathfinding pathfinding = new Pathfinding(mapManager);
+        int[] test = pathfinding.findNearestTraversableTile(0,0);
+        System.out.println(test[0] + " " + test[1]);
     }
     public void update(long deltaTime){
+        if(inputManager.isPressed(KeyCode.ESCAPE)){
+            for(Unit unit : selectedUnits){
+                unit.setSelected(false);
+                uiManager.disableOptionsBar();
+                buildSystem.stopPreviewing();
+            }
+        }
+
         if(buildSystem.isBuilding()){
             double[] mousePos = inputManager.getMousePosition();
             Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
             int[] temp = MapManager.convertToTileCoordinates(new double[]{mapPoint.getX(), mapPoint.getY()});
             double[] previewPos = MapManager.convertToWorldCoordinates(temp);
             ImageView view = buildSystem.getPreview();
+
+            int[] tileCoords = MapManager.convertToTileCoordinates(new double[]{mapPoint.getX(), mapPoint.getY()});
+            if(gameWorld.getBuildSystem().canPlaceBuilding(tileCoords[0], tileCoords[1], gameWorld.getBuildSystem().selectedBuilding)){
+                gameWorld.getBuildSystem().changePreviewColorBlending(Color.GREEN);
+            }
+            else {
+                gameWorld.getBuildSystem().changePreviewColorBlending(Color.RED);
+            }
+
             view.setLayoutX(previewPos[0]);
             view.setLayoutY(previewPos[1]);
         }
-
-        if(selectedUnits.size() == 1){
-            if(selectedUnits.get(0) instanceof WorkerUnit unit){
-                if(unit.isAssignedBuilding() && unit.hasReachedTarget()){
-                    unit.setAssignedBuilding(false);
-                    gameWorld.getBuildSystem().placeBuilding(unit.getBuildingPositionX(), unit.getBuildingPositionY());
-                }
-            }
-        }
-
 
         if(inputManager.wasMousePressed(MouseButton.PRIMARY)){
             double[] mousePos = inputManager.getMouseClickPosition();
             Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
 
-            Unit clickedUnit = inputManager.getClickedUnit();
-
-            if(clickedUnit != null){
-                clickedUnit.toogleUnitSelection();
-            } else {
-                if(!buildSystem.isBuilding()){
-                    uiManager.disableOptionsBar();
-                    // clicked ground → deselect all
-                    for(Unit unit : playerUnits){
-                        unit.setSelected(false);
-                    }
-                }
-            }
-
-            selectedUnits = selectionManager.getSelectedPlayerUnits();
-            if(selectedUnits.size() == 1 && selectedUnits.get(0) instanceof UIOptionBarHolder unitWithUI){
-                uiManager.enableOptionsBar(unitWithUI);
-            }
-            else{
-                uiManager.disableOptionsBar();
-            }
-
-            if(gameWorld.getBuildSystem().isBuilding()){
-                WorkerUnit unit = (WorkerUnit) selectedUnits.getFirst();
-                unit.buildAt(mapPoint.getX(), mapPoint.getY());
-                return;
-            }
-
             Tile clickedTile = gameWorld.getMapManager().getTileAt(mapPoint.getX(), mapPoint.getY());
             if (clickedTile instanceof UIOptionBarHolder castleTile) {
                 uiManager.enableOptionsBar(castleTile);
             }
+
+            Unit clickedUnit = inputManager.getClickedUnit();
+            if(clickedUnit != null){
+                clickedUnit.toogleUnitSelection();
+                selectedUnits = selectionManager.getSelectedPlayerUnits();
+                if(selectedUnits.size() == 1 && selectedUnits.get(0) instanceof UIOptionBarHolder unitWithUI){
+                    uiManager.enableOptionsBar(unitWithUI);
+                }
+                else{
+                    uiManager.disableOptionsBar();
+                }
+            }
+
+            if(gameWorld.getBuildSystem().isBuilding()){
+                WorkerUnit unit = (WorkerUnit) selectedUnits.getFirst();
+                int[] tileCoords = MapManager.convertToTileCoordinates(new double[]{mapPoint.getX(), mapPoint.getY()});
+                if(gameWorld.getBuildSystem().canPlaceBuilding(tileCoords[0], tileCoords[1], gameWorld.getBuildSystem().selectedBuilding)){
+                    unit.buildAt(gameWorld.getBuildSystem().selectedBuilding, mapPoint.getX(), mapPoint.getY());
+                }
+                else{
+                    gameWorld.getBuildSystem().stopPreviewing();
+                    System.out.println("Cannot build here");
+                }
+                return;
+            }
+
         }
         if(inputManager.wasMousePressed(MouseButton.SECONDARY)){
             double[] mousePos = inputManager.getMouseClickPosition();
@@ -161,6 +172,7 @@ public class Game extends Group{
                 unit.moveTo(mapPoint.getX(), mapPoint.getY());
             }
         }
+
         for(Unit unit : playerUnits){
             unit.update(deltaTime/1e9);
         }

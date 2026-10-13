@@ -2,8 +2,7 @@ package com.example.rtsgame.units;
 
 import com.example.rtsgame.Config;
 import com.example.rtsgame.map.MapManager;
-import com.example.rtsgame.statemachine.IdleState;
-import com.example.rtsgame.statemachine.StateMachine;
+import com.example.rtsgame.statemachine.*;
 import com.example.rtsgame.units.pathfinding.Pathfinding;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -29,17 +28,15 @@ public class Unit extends Group {
     protected int currentFrame;
 
     private boolean isSelected = false;
-    private boolean reachedTarget = false;
 
     protected MapManager mapManager;
 
-    private StateMachine<Unit> stateMachine;
+    protected StateMachine<? extends Unit> stateMachine;
     private boolean ownByAI;
 
     private Pathfinding pathfinding;
     public List<double[]> path = new ArrayList<>();
     public int pathIndex;
-    private double offsetInsideTile;
 
     protected int health;
 
@@ -52,7 +49,6 @@ public class Unit extends Group {
         setCenterX(x);
         setBottomY(y);
 
-        stateMachine = new StateMachine(this, new IdleState());
 
         pathfinding = new Pathfinding(mapManager);
 
@@ -68,6 +64,19 @@ public class Unit extends Group {
 
         setPickOnBounds(false); //click is detected only if clicked on opaque pixels
 
+        setupStateMachine();
+    }
+    protected void setupStateMachine(){
+        State<Unit> idleState = new IdleState<>();
+        State<Unit> movingState = new MovingState<>();
+
+        stateMachine = new StateMachine<>(this, idleState);
+
+        Transition<Unit> t = new Transition<>((unit) -> !unit.hasNoPath(), movingState);
+        idleState.addTransition(t);
+
+        Transition<Unit> t2 = new Transition<>(Unit::isFinishedMoving, idleState);
+        movingState.addTransition(t2);
     }
     private void setupAnimations(AnimationData[] animationData) {
         animations = new HashMap<>();
@@ -172,11 +181,14 @@ public class Unit extends Group {
 
         if(!path.isEmpty()){
             path.add(new double[]{targetX, targetY});
-            reachedTarget = false;
         }
         path = smoothPath(path);
-        pathIndex = 1; //if we start from 0 then unit centers himself in his starting tile
-
+        if(!path.isEmpty()){
+            pathIndex = 1; //if we start from 0 then unit centers himself in his starting tile
+        }
+        else{
+            System.out.println("No path found");
+        }
     }
     public boolean hasLineOfSight(double x1, double y1, double x2, double y2){
 
@@ -184,6 +196,10 @@ public class Unit extends Group {
         double dy = y2 - y1;
 
         int steps = (int)(Math.max(Math.abs(dx), Math.abs(dy)) / 2);
+
+        if(steps == 0){
+            return true;
+        }
 
         for(int i = 0; i <= steps; i++){
 
@@ -211,7 +227,7 @@ public class Unit extends Group {
 
             int j = path.size() - 1;
 
-            for(; j > i; j--){
+            for(; j > i; --j){
                 if(hasLineOfSight(
                         path.get(i)[0], path.get(i)[1],
                         path.get(j)[0], path.get(j)[1]
@@ -225,10 +241,15 @@ public class Unit extends Group {
         if(!result.isEmpty()){
             result.add(path.getLast());
         }
+
         return result;
     }
 
     public void update(double delta) {
+        if(isInsideCollidableTile()){
+            resolveIfInsideCollidableTile(delta);
+        }
+
         stateMachine.update(delta);
     }
     public boolean isCloseTo(double targetX, double targetY) {
@@ -276,13 +297,30 @@ public class Unit extends Group {
         }
 
     }
+    public boolean isInsideCollidableTile() {
+        int[] tile = mapManager.convertToTileCoordinates(
+                new double[]{getCenterX(), getBottomY()}
+        );
+        return !mapManager.isTileTraversable(tile[0], tile[1]);
+    }
+    public void resolveIfInsideCollidableTile(double deltaTime) {
+        int[] tile = mapManager.convertToTileCoordinates(
+                new double[]{getCenterX(), getBottomY()}
+        );
+        int[] newPos = pathfinding.findNearestTraversableTile(tile[0], tile[1]);
+
+        double dx = newPos[0] - tile[0];
+        double dy = newPos[1] - tile[1];
+        double newX = dx*deltaTime*Config.UNIT_COLLISION_PUSH_SPEED + getCenterX();
+        double newY = dy*deltaTime*Config.UNIT_COLLISION_PUSH_SPEED + getBottomY();
+
+        setCenterX(newX);
+        setBottomY(newY);
+    }
     public void achievedTarget(){
         setCurrentAnimation(AnimationType.IDLE);
-        this.reachedTarget = true;
     }
-    public boolean hasReachedTarget(){
-        return reachedTarget;
-    }
+
     private void resolveTileCollision(double newX, double newY) {
 
         double oldX = getCenterX();
@@ -319,6 +357,12 @@ public class Unit extends Group {
     }
     private void setBottomY(double y) {
         setLayoutY(y-spriteHeight);
+    }
+    public boolean isFinishedMoving(){
+        return pathIndex >= path.size();
+    }
+    public boolean hasNoPath(){
+        return path.isEmpty();
     }
 }
 

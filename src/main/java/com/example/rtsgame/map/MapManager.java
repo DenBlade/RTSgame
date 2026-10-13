@@ -14,7 +14,6 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
-import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -30,8 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MapManager {
-    int mapWidth;
-    int mapHeight;
+    public int mapWidth;
+    public int mapHeight;
     Canvas canvas;
     GraphicsContext gc;
     int[] tilesetIds;
@@ -245,7 +244,7 @@ public class MapManager {
     public void debugWriteTilesData(){
         for(int i = 0; i<tilesData.length; i++){
             for (int j = 0; j<tilesData[i].length; j++){
-                System.out.print((tilesData[i][j] instanceof BuildingTile)+" ");
+                System.out.print((tilesData[i][j].getClass().getSimpleName())+" ");
             }
             System.out.println();
         }

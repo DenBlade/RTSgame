@@ -13,13 +13,14 @@ public class Config {
     public static final double CAMERA_MOVEMENT_STEP = 15;
 
     public static final double SWORDSMAN_MOVEMENT_SPEED = 60;
-    public static final double ERROR_TOLERANCE = 0.5;
+    public static final double UNIT_COLLISION_PUSH_SPEED = 100;
 
     public static final AnimationData SWORDSMAN_IDLE_ANIM = new AnimationData(AnimationType.IDLE, 0, 4);
     public static final AnimationData SWORDSMAN_WALK_ANIM = new AnimationData(AnimationType.WALK, 1, 6);
 
     public static final AnimationData WORKER_IDLE_ANIM = new AnimationData(AnimationType.IDLE, 0, 4);
     public static final AnimationData WORKER_WALK_ANIM = new AnimationData(AnimationType.WALK, 3, 6);
+    public static final AnimationData WORKER_WORK_ANIM = new AnimationData(AnimationType.WORK, 2, 5);
 
     public static final int SWORDSMAN_MAX_HEALTH = 7;
 

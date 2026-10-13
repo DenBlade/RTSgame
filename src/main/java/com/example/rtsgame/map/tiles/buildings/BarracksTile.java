@@ -5,7 +5,6 @@ import com.example.rtsgame.UIOptionBarHolder;
 import com.example.rtsgame.map.tiles.Tile;
 import com.example.rtsgame.units.AttackUnit;
 import com.example.rtsgame.units.UnitType;
-import com.example.rtsgame.units.WorkerUnit;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 

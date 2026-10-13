@@ -3,17 +3,21 @@ package com.example.rtsgame.statemachine;
 import com.example.rtsgame.units.AnimationType;
 import com.example.rtsgame.units.Unit;
 
-public class MovingState implements State<Unit> {
+import java.util.List;
+
+public class MovingState<T extends Unit> extends State<T> {
     @Override
-    public void enter(Unit unit) {
+    public void enter(T unit) {
         System.out.println("Moving state entered");
     }
 
     @Override
-    public State<Unit> update(Unit unit, double delta) {
-        if(unit.pathIndex >= unit.path.size()) {
-            return new IdleState();
+    public State<T> update(T unit, double delta) {
+        State<T> next = transition(unit);
+        if (next != null) {
+            return next;
         }
+
         double[] target = unit.path.get(unit.pathIndex);
 
         unit.moveSmooth(target[0], target[1], delta);
@@ -26,7 +30,7 @@ public class MovingState implements State<Unit> {
     }
 
     @Override
-    public void exit(Unit unit) {
+    public void exit(T unit) {
         unit.setCurrentAnimation(AnimationType.IDLE);
         unit.achievedTarget();
         unit.path.clear();
