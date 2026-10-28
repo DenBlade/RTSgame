@@ -2,6 +2,9 @@ package com.example.rtsgame.units.pathfinding;
 
 import com.example.rtsgame.Config;
 import com.example.rtsgame.map.MapManager;
+import com.example.rtsgame.map.tiles.Tile;
+import com.example.rtsgame.map.tiles.buildings.BuildingTile;
+import com.example.rtsgame.map.tiles.buildings.BuildingType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +18,24 @@ public class Pathfinding {
     }
 
     public List<int[]> findPath(int startTileX, int startTileY, int endTileX, int endTileY){
+
+        if (!mapManager.isTileTraversable(endTileX, endTileY)) {
+            Tile targetTile = mapManager.getTile(endTileX, endTileY);
+            int[] nearest = null;
+
+            if (targetTile instanceof BuildingTile buildingTile) {
+                nearest = findClosestPerimeterTile(startTileX, startTileY, buildingTile);
+            }
+            if (nearest == null) {
+                nearest = findNearestTraversableTile(endTileX, endTileY);
+            }
+            if (nearest != null) {
+                endTileX = nearest[0];
+                endTileY = nearest[1];
+            } else {
+                return new ArrayList<>();
+            }
+        }
 
         List<PathNode> openList = new ArrayList<>();
         List<PathNode> closedList = new ArrayList<>();
@@ -95,6 +116,48 @@ public class Pathfinding {
         }
         return null;
     }
+
+    public int[] findClosestPerimeterTile(int startX, int startY, BuildingTile building) {
+        BuildingType type = building.getBuildingType();
+        int originX = building.getX();
+        int originY = building.getY();
+        int width = type.getWidth();
+        int height = type.getHeight();
+
+        List<int[]> candidates = new ArrayList<>();
+
+        for (int x = originX - 1; x <= originX + width; x++) {
+            for (int y = originY - 1; y <= originY + height; y++) {
+
+                if (x >= originX && x < originX + width && y >= originY && y < originY + height) {
+                    continue;
+                }
+
+                if (mapManager.isInBounds(x, y) && mapManager.isTileTraversable(x, y)) {
+                    candidates.add(new int[]{x, y});
+                }
+            }
+        }
+
+        if (candidates.isEmpty()) return null;
+
+        int[] bestTile = candidates.get(0);
+        double minDistanceSq = Double.MAX_VALUE;
+
+        for (int[] tile : candidates) {
+            double dx = tile[0] - startX;
+            double dy = tile[1] - startY;
+            double distanceSq = dx * dx + dy * dy;
+
+            if (distanceSq < minDistanceSq) {
+                minDistanceSq = distanceSq;
+                bestTile = tile;
+            }
+        }
+
+        return bestTile;
+    }
+
     private double heuristic(int x1, int y1, int x2, int y2){
         return Math.abs(x1 - x2) + Math.abs(y1 - y2); // Manhattan
     }

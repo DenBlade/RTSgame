@@ -1,6 +1,7 @@
 package com.example.rtsgame.units;
 
 import com.example.rtsgame.Config;
+import com.example.rtsgame.Damageable;
 import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.statemachine.*;
 import com.example.rtsgame.units.pathfinding.Pathfinding;
@@ -18,7 +19,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-public class Unit extends Group {
+public class Unit extends Group implements Damageable {
 
     private Image spriteSheet;
     private ImageView unitSprite;
@@ -32,20 +33,26 @@ public class Unit extends Group {
     protected MapManager mapManager;
 
     protected StateMachine<? extends Unit> stateMachine;
-    private boolean ownByAI;
+    public boolean ownByAI;
 
-    private Pathfinding pathfinding;
+    public Pathfinding pathfinding;
     public List<double[]> path = new ArrayList<>();
     public int pathIndex;
 
+    protected int maxHealth;
     protected int health;
+    private double speed;
 
-    public Unit(String fileName, AnimationData[] animationData, MapManager mapManager, int health, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
+    private boolean removalRequested = false;
+
+    public Unit(String fileName, AnimationData[] animationData, MapManager mapManager, int health, double speed, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
         this.spriteWidth = spriteWidth * scale;
         this.spriteHeight = spriteHeight * scale;
         this.ownByAI = ownByAI;
         this.mapManager = mapManager;
-        this.health = health;
+        this.maxHealth = health;
+        this.health = maxHealth;
+        this.speed = speed;
         setCenterX(x);
         setBottomY(y);
 
@@ -60,7 +67,7 @@ public class Unit extends Group {
         getChildren().add(unitSprite);
         setupAnimations(animationData);
 
-        setCurrentAnimation(AnimationType.IDLE);
+        setCurrentAnimationLoop(AnimationType.IDLE);
 
         setPickOnBounds(false); //click is detected only if clicked on opaque pixels
 
@@ -69,14 +76,19 @@ public class Unit extends Group {
     protected void setupStateMachine(){
         State<Unit> idleState = new IdleState<>();
         State<Unit> movingState = new MovingState<>();
+        State<Unit> deadState = new DeadState<>();
 
         stateMachine = new StateMachine<>(this, idleState);
 
-        Transition<Unit> t = new Transition<>((unit) -> !unit.hasNoPath(), movingState);
-        idleState.addTransition(t);
+        Transition<Unit> dead = new Transition<>((unit) -> unit.health <= 0, deadState);
 
-        Transition<Unit> t2 = new Transition<>(Unit::isFinishedMoving, idleState);
-        movingState.addTransition(t2);
+        Transition<Unit> movingFromIdle = new Transition<>((unit) -> unit.hasPath(), movingState);
+        idleState.addTransition(movingFromIdle);
+        idleState.addTransition(dead);
+
+        Transition<Unit> idleFromMoving = new Transition<>(Unit::isFinishedMoving, idleState);
+        movingState.addTransition(idleFromMoving);
+        movingState.addTransition(dead);
     }
     private void setupAnimations(AnimationData[] animationData) {
         animations = new HashMap<>();
@@ -84,18 +96,18 @@ public class Unit extends Group {
             animations.put(animationData[i].getType(), animationData[i]);
         }
     }
-    public void setCurrentAnimation(AnimationType type) {
+    public void setCurrentAnimationLoop(AnimationType type) {
         AnimationData animationData = animations.get(type);
         if (animationData != null) {
             if(currentAnimation == null) {
                 Timeline timeline = new Timeline(
                         new KeyFrame(Duration.millis(100), e -> {
 
-                            currentFrame = (currentFrame + 1) % currentAnimation.getAnimationData().getSpritesCount();
-
                             double x = currentFrame * spriteWidth;
                             double y = currentAnimation.getAnimationData().getRow() * spriteHeight;
                             unitSprite.setViewport(new Rectangle2D(x, y, spriteWidth, spriteHeight));
+
+                            currentFrame = (currentFrame + 1) % currentAnimation.getAnimationData().getSpritesCount();
                         })
                 );
                 currentAnimation = new AnimationTimeline(animationData, timeline);
@@ -110,8 +122,43 @@ public class Unit extends Group {
             System.out.println("No animation for type " + type);
         }
     }
+    public double setCurrentAnimationOnce(AnimationType type, double frameDelayMilis){
+        AnimationData animationData = animations.get(type);
+        if (animationData != null) {
+            if(currentAnimation != null) {
+                currentAnimation.getTimeline().stop();
+                currentAnimation = null;
+                currentFrame = 0;
+            }
+            Timeline timeline = new Timeline(
+                    new KeyFrame(Duration.millis(frameDelayMilis), e -> {
 
-    public void toogleUnitSelection(){
+                        double x = currentFrame * spriteWidth;
+                        double y = currentAnimation.getAnimationData().getRow() * spriteHeight;
+                        unitSprite.setViewport(new Rectangle2D(x, y, spriteWidth, spriteHeight));
+
+                        currentFrame = (currentFrame + 1) % currentAnimation.getAnimationData().getSpritesCount();
+                        })
+                );
+
+            int spriteCount = animationData.getSpritesCount();
+
+            currentAnimation = new AnimationTimeline(animationData, timeline);
+            currentAnimation.getTimeline().setCycleCount(spriteCount);
+            currentAnimation.getTimeline().play();
+
+            return spriteCount * frameDelayMilis;
+        }
+        else {
+            System.out.println("No animation for type " + type);
+        }
+        return 0;
+    }
+    public void stopAnimation(){
+        currentAnimation.getTimeline().stop();
+    }
+
+    public void toggleSelection(){
         setSelected(!isSelected);
     }
 
@@ -153,7 +200,7 @@ public class Unit extends Group {
 
         return output;
     }
-    public void moveTo(double targetX, double targetY) {
+    public boolean setupPath(double targetX, double targetY) {
         int[] start = mapManager.convertToTileCoordinates(
                 new double[]{getCenterX(), getBottomY()}
         );
@@ -180,14 +227,18 @@ public class Unit extends Group {
         }
 
         if(!path.isEmpty()){
-            path.add(new double[]{targetX, targetY});
+            if(mapManager.isTraversableAt(targetX, targetY)){
+                path.add(new double[]{targetX, targetY});
+            }
         }
         path = smoothPath(path);
         if(!path.isEmpty()){
             pathIndex = 1; //if we start from 0 then unit centers himself in his starting tile
+            return true;
         }
         else{
             System.out.println("No path found");
+            return false;
         }
     }
     public boolean hasLineOfSight(double x1, double y1, double x2, double y2){
@@ -269,16 +320,9 @@ public class Unit extends Group {
 
         double distance = Math.sqrt(dx * dx + dy * dy);
 
-        //flip image if moving left
-        if(dx<0){
-            unitSprite.setScaleX(-1);
-        }
-        else{
-            unitSprite.setScaleX(1);
-        }
+        facePosition(targetX);
 
-        setCurrentAnimation(AnimationType.WALK);
-        double moveDistance = Config.SWORDSMAN_MOVEMENT_SPEED * deltaTime;
+        double moveDistance = speed * deltaTime;
 
         double dirX = dx / distance;
         double dirY = dy / distance;
@@ -296,6 +340,13 @@ public class Unit extends Group {
             setBottomY(newY);
         }
 
+    }
+    public void facePosition(double targetX) {
+        if (targetX < getCenterX()) {
+            unitSprite.setScaleX(-1);
+        } else {
+            unitSprite.setScaleX(1);
+        }
     }
     public boolean isInsideCollidableTile() {
         int[] tile = mapManager.convertToTileCoordinates(
@@ -318,7 +369,7 @@ public class Unit extends Group {
         setBottomY(newY);
     }
     public void achievedTarget(){
-        setCurrentAnimation(AnimationType.IDLE);
+//        setCurrentAnimationLoop(AnimationType.IDLE);
     }
 
     private void resolveTileCollision(double newX, double newY) {
@@ -340,13 +391,17 @@ public class Unit extends Group {
 
         // both blocked → stay
     }
-    private double getCenterX(){
+    @Override
+    public boolean isDestroyed() {
+        return health <= 0 || removalRequested;
+    }
+    public double getCenterX(){
         return getLayoutX() + spriteWidth/2;
     }
-    private double getCenterY(){
+    public double getCenterY(){
         return getLayoutY() + spriteHeight/2;
     }
-    private double getBottomY(){
+    public double getBottomY(){
         return getLayoutY() + spriteHeight;
     }
     private void setCenterX(double x) {
@@ -361,8 +416,30 @@ public class Unit extends Group {
     public boolean isFinishedMoving(){
         return pathIndex >= path.size();
     }
-    public boolean hasNoPath(){
-        return path.isEmpty();
+    public boolean hasPath(){
+        return !path.isEmpty();
+    }
+    @Override
+    public void takeDamage(int damage) {
+        int newHealth = health - damage;
+        if(newHealth <= 0){
+            health = 0;
+        }
+        else{
+            health = newHealth;
+        }
+    }
+
+    @Override
+    public boolean ownByAi() {
+        return ownByAI;
+    }
+
+    public void requestRemoval(){
+        removalRequested = true;
+    }
+    public boolean isRemovalRequested(){
+        return removalRequested;
     }
 }
 

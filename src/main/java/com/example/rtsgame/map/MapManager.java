@@ -36,6 +36,7 @@ public class MapManager {
     int[] tilesetIds;
     Image[] tilesetImages;
     Tile[][] tilesData;
+    int[][] tilesImageIds;
     BuildingPrefab castlePrefab;
     BuildingPrefab barracksPrefab;
 
@@ -57,6 +58,7 @@ public class MapManager {
         NodeList tilesets = doc.getElementsByTagName("tileset");
         tilesetImages = new Image[tilesets.getLength()];
         tilesetIds = new int[tilesets.getLength()];
+        tilesImageIds = new int[layers.getLength()][];
 
         castlePrefab = loadBuildingFromTMX("castleBuilding.tmx");
         barracksPrefab = loadBuildingFromTMX("barracksBuilding.tmx");
@@ -73,6 +75,7 @@ public class MapManager {
             Element layer = (Element) layers.item(layerId);
             Element data = (Element) layer.getElementsByTagName("data").item(0);
             String[] tiles = data.getTextContent().trim().split(",");
+            tilesImageIds[layerId] = new int[tiles.length];
             TileFactory tileFactory;
             switch (layer.getAttribute("name")){
                 case "bottom":
@@ -89,50 +92,41 @@ public class MapManager {
                         break;
 
             }
-            this.processLayer(tiles, tileFactory);
+            this.processLayer(layerId, tiles, tileFactory);
         }
-//        //drawing PlayerCastle
-//        gc.drawImage(castlePrefab.getImage(), Config.PLAYER_CASTLE_POS[0]*Config.TILE_WIDTH, Config.PLAYER_CASTLE_POS[1]*Config.TILE_HEIGHT);
-//        //storing it in memory
-//        CastleTile.incrementBuildingsCount();
-//        final int playerCastleId = CastleTile.getBuildingsCount();
-//        TileFactory playerCastleFactory = (x, y) -> new CastleTile(playerCastleId, x, y, false);
-//        setTilesData(Config.PLAYER_CASTLE_POS[0], Config.PLAYER_CASTLE_POS[1], castlePrefab.getWidth(), castlePrefab.getHeight(), playerCastleFactory);
-//        placeCastle(false, Config.PLAYER_CASTLE_POS[0], Config.PLAYER_CASTLE_POS[1]);
-        placeBuilding(BuildingType.CASTLE, false, Config.PLAYER_CASTLE_POS[0], Config.PLAYER_CASTLE_POS[1]);
-
-//        //drawing EnemyCastle
-//        gc.drawImage(castlePrefab.getImage(), Config.ENEMY_CASTLE_POS[0]*Config.TILE_WIDTH, Config.ENEMY_CASTLE_POS[1]*Config.TILE_HEIGHT);
-//        //storing it in memory
-//        CastleTile.incrementBuildingsCount();
-//        final int enemyCastleId = CastleTile.getBuildingsCount();
-//        TileFactory enemyCastleFactory = (x, y) -> new CastleTile(enemyCastleId, x, y, true);
-//        setTilesData(Config.ENEMY_CASTLE_POS[0], Config.ENEMY_CASTLE_POS[1], castlePrefab.getWidth(), castlePrefab.getHeight(), enemyCastleFactory);
-//        placeCastle(true, Config.ENEMY_CASTLE_POS[0], Config.ENEMY_CASTLE_POS[1]);
-        placeBuilding(BuildingType.CASTLE, true, Config.ENEMY_CASTLE_POS[0], Config.PLAYER_CASTLE_POS[1]);
-
     }
 
-
-    private void processLayer(String[] tiles, TileFactory tileFactory){ //drawing main map layer
-        Image tileset = null;
+    private void processLayer(int layer, String[] tiles, TileFactory tileFactory){ //drawing main map layer
+        Image tileset;
         for (int y = 0; y < mapHeight; y++) { // drawing tiles
             for (int x = 0; x < mapWidth; x++) {
                 int index = y * mapWidth + x;
                 int tileId = Integer.parseInt(tiles[index].trim());
+                tilesImageIds[layer][index] = tileId;
 
                 if (tileId == 0) continue; // empty tile
-                for(int tilesetId = tilesetIds.length-1; tilesetId>=0; tilesetId--){ // checking to which tileset tile belongs
-                    if(tileId>=tilesetIds[tilesetId]){
-                        tileId = tileId-tilesetIds[tilesetId]+1;
-                        tileset = tilesetImages[tilesetId];
-                        break;
-                    }
-                }
+
                 setTilesData(x,y,tileFactory);
+
+                int tilesetId = getTilesetId(tileId);
+                tileset = tilesetImages[tilesetId];
+                tileId = convertGlobalTileIdToTilesetTileId(tilesetId, tileId);
+
                 this.drawTile(gc, tileId, tileset, x, y);
             }
         }
+    }
+
+    private int getTilesetId(int tileId){
+        for(int tilesetId = tilesetIds.length-1; tilesetId>=0; tilesetId--){ // checking to which tileset tile belongs
+            if(tileId>=tilesetIds[tilesetId]){
+                return tilesetId;
+            }
+        }
+        return -1;
+    }
+    private int convertGlobalTileIdToTilesetTileId(int tilesetId, int tileId){
+        return tileId-tilesetIds[tilesetId]+1;
     }
     private void setTilesData(int x, int y, TileFactory tileFactory){
         tilesData[x][y] = tileFactory.createTile(x, y);
@@ -168,6 +162,17 @@ public class MapManager {
                 Config.TILE_WIDTH, Config.TILE_HEIGHT
         );
     }
+    public void redrawBaseTile(int x, int y) {
+        int index = y * mapWidth + x;
+        int tileId = tilesImageIds[0][index];
+        if (tileId == 0) return;
+
+        int tilesetId = getTilesetId(tileId);
+        Image tileset = tilesetImages[tilesetId];
+        tileId = convertGlobalTileIdToTilesetTileId(tilesetId, tileId);
+
+        this.drawTile(gc, tileId, tileset, x, y);
+    }
     private BuildingPrefab loadBuildingFromTMX(String fileName) throws ParserConfigurationException, IOException, SAXException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -195,36 +200,42 @@ public class MapManager {
         canvas.snapshot(params, buildingImage);
         return new BuildingPrefab(buildingImage, mapWidth, mapHeight);
     }
-//    public void placeCastle(boolean ownByAI, int tileX, int tileY){
-//        //drawing PlayerCastle
-//        gc.drawImage(castlePrefab.getImage(), tileX*Config.TILE_WIDTH, tileY*Config.TILE_HEIGHT);
-//        //storing it in memory
-//        CastleTile.incrementBuildingsCount();
-//        final int playerCastleId = CastleTile.getBuildingsCount();
-//        TileFactory playerCastleFactory = (x, y) -> new CastleTile(playerCastleId, x, y, ownByAI);
-//        setTilesData(tileX, tileY, castlePrefab.getWidth(), castlePrefab.getHeight(), playerCastleFactory);
-//    }
-//    public void placeBarracks(boolean ownByAI, int tileX, int tileY){
-//        gc.drawImage(barracksPrefab.getImage(), tileX*Config.TILE_WIDTH, tileY*Config.TILE_HEIGHT);
-//        //storing it in memory
-//        TileFactory barracksFactory = (x, y) -> new BarracksTile(x, y, ownByAI);
-//        setTilesData(tileX, tileY, barracksFactory);
-//    }
-    public void placeBuilding(BuildingType type, boolean ownByAI, int tileX, int tileY){
-        TileFactory factory = null;
+    public BuildingTile placeBuilding(BuildingType type, boolean ownByAI, int tileX, int tileY){
+        BuildingTile building = null;
         switch (type){
-            case CASTLE -> {
-                CastleTile.incrementBuildingsCount();
-                final int playerCastleId = CastleTile.getBuildingsCount();
-                factory = (x, y) -> new CastleTile(playerCastleId, x, y, ownByAI);
-            }
-            case BARRACKS -> {
-                factory = (x, y) -> new BarracksTile(x, y, ownByAI);
-            }
+            case CASTLE -> building = new CastleTile(tileX, tileY, ownByAI, this);
+            case BARRACKS -> building = new CastleTile(tileX, tileY, ownByAI, this);
         }
         BuildingPrefab prefab = getBuildingPrefab(type);
         gc.drawImage(prefab.getImage(), tileX*Config.TILE_WIDTH, tileY*Config.TILE_HEIGHT);
-        setTilesData(tileX, tileY, prefab.getWidth(), prefab.getHeight(), factory);
+
+        for (int i = tileX; i < tileX + prefab.getWidth(); i++) {
+            for (int j = tileY; j < tileY + prefab.getHeight(); j++) {
+                if (isInBounds(i, j)) {
+                    tilesData[i][j] = building;
+                }
+            }
+        }
+        return building;
+    }
+    public void destroyBuilding(BuildingTile building) {
+        if (building == null) return;
+
+        int originX = building.getX();
+        int originY = building.getY();
+        BuildingType type = building.getBuildingType();
+
+        int width = type.getWidth();
+        int height = type.getHeight();
+
+        for (int x = originX; x < originX + width; x++) {
+            for (int y = originY; y < originY + height; y++) {
+                if (isInBounds(x, y)) {
+                    tilesData[x][y] = new Tile(x, y, true);
+                    redrawBaseTile(x, y);
+                }
+            }
+        }
     }
     public BuildingPrefab getBuildingPrefab(BuildingType buildingType){
         switch(buildingType){
@@ -244,7 +255,9 @@ public class MapManager {
     public void debugWriteTilesData(){
         for(int i = 0; i<tilesData.length; i++){
             for (int j = 0; j<tilesData[i].length; j++){
-                System.out.print((tilesData[i][j].getClass().getSimpleName())+" ");
+                if(tilesData[i][j] instanceof CastleTile){
+                    System.out.println("Castle coords: " + i + " " + j);
+                }
             }
             System.out.println();
         }
@@ -269,6 +282,9 @@ public class MapManager {
     }
     public static int[] convertToTileCoordinates(double[] coords){
         return new int[]{(int)coords[0]/Config.TILE_WIDTH,(int)coords[1]/Config.TILE_HEIGHT};
+    }
+    public static int[] convertToTileCoordinates(double x, double y) {
+        return new int[]{(int)x/Config.TILE_WIDTH,(int)y/Config.TILE_HEIGHT};
     }
     public boolean isTraversableAt(double x, double y){
         int[] coords = convertToTileCoordinates(new double[]{x,y});

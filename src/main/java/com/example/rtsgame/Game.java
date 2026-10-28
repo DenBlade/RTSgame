@@ -2,16 +2,14 @@ package com.example.rtsgame;
 
 import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.map.tiles.Tile;
+import com.example.rtsgame.map.tiles.buildings.BuildingTile;
+import com.example.rtsgame.map.tiles.buildings.BuildingType;
 import com.example.rtsgame.units.*;
-import com.example.rtsgame.units.pathfinding.Pathfinding;
 import com.example.rtsgame.units.workerunit.WorkerUnit;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.effect.Blend;
-import javafx.scene.effect.BlendMode;
-import javafx.scene.effect.ColorInput;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
@@ -21,7 +19,9 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 
 public class Game extends Group{
     Group root;
@@ -35,13 +35,13 @@ public class Game extends Group{
     GameUpdateTimer updateTimer;
     GameWorld gameWorld;
     BuildSystem buildSystem;
-    ImageView buildingPreview;
     UIManager uiManager;
     SelectionManager selectionManager;
     double mapPixelWidth, mapPixelHeight;
 
     List<Unit> playerUnits;
     List<Unit> selectedUnits;
+    List<Unit> unitsToRemove;
     public Game(Group root, Scene scene) throws ParserConfigurationException, IOException, SAXException {
         this.root = root;
         this.scene = scene;
@@ -60,6 +60,7 @@ public class Game extends Group{
         gameWorld = new GameWorld(map, mapManager);
         buildSystem = gameWorld.getBuildSystem();
         playerUnits = gameWorld.getPlayerUnits();
+        unitsToRemove = new ArrayList<>();
         selectionManager = new SelectionManager(playerUnits);
 
         uiManager = new UIManager(gameWorld, scene);
@@ -88,25 +89,32 @@ public class Game extends Group{
 
         AttackUnit swordsman = AttackUnit.createSwordsman(mapManager, false, 200, 200);
         gameWorld.spawnUnit(swordsman);
+        AttackUnit swordsman2 = AttackUnit.createSwordsman(mapManager, true, 500, 200);
+        gameWorld.spawnUnit(swordsman2);
 
         WorkerUnit worker = WorkerUnit.createWorker(mapManager, false, 300, 200);
         gameWorld.spawnUnit(worker);
+
+        gameWorld.placeBuilding(BuildingType.CASTLE, true, Config.ENEMY_CASTLE_POS[0], Config.ENEMY_CASTLE_POS[1]);
+        gameWorld.placeBuilding(BuildingType.CASTLE, false, Config.PLAYER_CASTLE_POS[0], Config.PLAYER_CASTLE_POS[1]);
 
         selectedUnits = selectionManager.getSelectedPlayerUnits();
 
         updateTimer = new GameUpdateTimer(this);
         updateTimer.start();
 
-        Pathfinding pathfinding = new Pathfinding(mapManager);
-        int[] test = pathfinding.findNearestTraversableTile(0,0);
-        System.out.println(test[0] + " " + test[1]);
     }
     public void update(long deltaTime){
+        
+        if(uiManager.getUiOwner() != null && !uiManager.getUiOwner().isSelected()){
+            uiManager.disableOptionsBar();
+        }
+
         if(inputManager.isPressed(KeyCode.ESCAPE)){
+            uiManager.disableOptionsBar();
+            buildSystem.stopPreviewing();
             for(Unit unit : selectedUnits){
                 unit.setSelected(false);
-                uiManager.disableOptionsBar();
-                buildSystem.stopPreviewing();
             }
         }
 
@@ -134,15 +142,17 @@ public class Game extends Group{
             Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
 
             Tile clickedTile = gameWorld.getMapManager().getTileAt(mapPoint.getX(), mapPoint.getY());
-            if (clickedTile instanceof UIOptionBarHolder castleTile) {
-                uiManager.enableOptionsBar(castleTile);
+            if (clickedTile instanceof UIOptionBarHolder tileWithUI) {
+                tileWithUI.setSelected(true);
+                System.out.println(tileWithUI.isSelected());
+                uiManager.enableOptionsBar(tileWithUI);
             }
 
             Unit clickedUnit = inputManager.getClickedUnit();
             if(clickedUnit != null){
-                clickedUnit.toogleUnitSelection();
+                clickedUnit.toggleSelection();
                 selectedUnits = selectionManager.getSelectedPlayerUnits();
-                if(selectedUnits.size() == 1 && selectedUnits.get(0) instanceof UIOptionBarHolder unitWithUI){
+                if(selectedUnits.size() == 1 && selectedUnits.getFirst() instanceof UIOptionBarHolder unitWithUI){
                     uiManager.enableOptionsBar(unitWithUI);
                 }
                 else{
@@ -167,15 +177,39 @@ public class Game extends Group{
         if(inputManager.wasMousePressed(MouseButton.SECONDARY)){
             double[] mousePos = inputManager.getMouseClickPosition();
             Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
-            System.out.println("MouseX: " + mousePos[0] + " " + mousePos[1]);
+
+            Unit clickedUnit = inputManager.getClickedUnit();
+            Tile clickedTile = gameWorld.getMapManager().getTileAt(mapPoint.getX(), mapPoint.getY());
+
+            Damageable targetDamageable = null;
+            if (clickedUnit != null) {
+                targetDamageable = clickedUnit;
+            } else if (clickedTile instanceof BuildingTile buildingTile) {
+                targetDamageable = buildingTile;
+            }
             for(Unit unit : selectedUnits){
-                unit.moveTo(mapPoint.getX(), mapPoint.getY());
+                if (unit instanceof AttackUnit attackUnit && (targetDamageable != null && targetDamageable.ownByAi())) {
+                    attackUnit.attackTarget(targetDamageable);
+                } else {
+                    unit.setupPath(mapPoint.getX(), mapPoint.getY());
+                }
             }
         }
 
         for(Unit unit : playerUnits){
             unit.update(deltaTime/1e9);
+            if(unit.isRemovalRequested()){
+                unitsToRemove.add(unit);
+            }
         }
+
+        ListIterator<Unit> removeUnitsIt = unitsToRemove.listIterator();
+        while(removeUnitsIt.hasNext()){
+            Unit unit = removeUnitsIt.next();
+            gameWorld.removeUnit(unit);
+            removeUnitsIt.remove();
+        }
+
 
         double moveX = 0;
         double moveY = 0;

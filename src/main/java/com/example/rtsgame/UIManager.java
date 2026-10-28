@@ -8,6 +8,7 @@ import javafx.scene.layout.VBox;
 public class UIManager extends Group {
     GameWorld gameWorld;
     VBox optionsBar;
+    UIOptionBarHolder uiOwner;
     Scene scene;
     public UIManager(GameWorld gameWorld, Scene scene) {
         this.gameWorld = gameWorld;
@@ -23,8 +24,13 @@ public class UIManager extends Group {
     public void enableOptionsBar(UIOptionBarHolder uiElement){
         optionsBar.getChildren().clear();
         optionsBar.getChildren().addAll(uiElement.getUI(gameWorld));
+        uiOwner = uiElement;
     }
     public void disableOptionsBar(){
         optionsBar.getChildren().clear();
+        uiOwner = null;
+    }
+    public UIOptionBarHolder getUiOwner(){
+        return uiOwner;
     }
 }

@@ -2,6 +2,7 @@ package com.example.rtsgame.map.tiles.buildings;
 
 import com.example.rtsgame.GameWorld;
 import com.example.rtsgame.UIOptionBarHolder;
+import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.map.tiles.Tile;
 import com.example.rtsgame.units.workerunit.WorkerUnit;
 import javafx.scene.Node;
@@ -12,8 +13,8 @@ import java.util.List;
 
 public class CastleTile extends BuildingTile implements UIOptionBarHolder {
 
-    public CastleTile(int id, int x, int y, boolean ownedByAI) {
-        super(id, x, y, ownedByAI);
+    public CastleTile(int x, int y, boolean ownedByAI, MapManager mapManager) {
+        super(x, y, ownedByAI, BuildingType.CASTLE, mapManager);
     }
 
     private void spawnWorker(GameWorld gameWorld) {

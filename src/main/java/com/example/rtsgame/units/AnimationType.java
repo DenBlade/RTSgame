@@ -4,5 +4,6 @@ public enum AnimationType {
     IDLE,
     WALK,
     ATTACK,
-    WORK
+    WORK,
+    DEATH
 }

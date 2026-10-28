@@ -50,7 +50,7 @@ public class BuildSystem {
 
     public boolean placeBuilding(BuildingType buildingType, int tileX, int tileY){
         if(canPlaceBuilding(tileX,tileY,buildingType)){
-            world.placeBuilding(buildingType, tileX, tileY);
+            world.placeBuilding(buildingType, false, tileX, tileY);
             return true;
         }
         stopPreviewing();

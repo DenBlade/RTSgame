@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface UIOptionBarHolder {
     List<Node> getUI(GameWorld gameWorld);
+    boolean isSelected();
+    void setSelected(boolean selected);
 }

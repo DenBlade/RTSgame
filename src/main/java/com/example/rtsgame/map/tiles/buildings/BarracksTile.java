@@ -2,6 +2,7 @@ package com.example.rtsgame.map.tiles.buildings;
 
 import com.example.rtsgame.GameWorld;
 import com.example.rtsgame.UIOptionBarHolder;
+import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.map.tiles.Tile;
 import com.example.rtsgame.units.AttackUnit;
 import com.example.rtsgame.units.UnitType;
@@ -12,9 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BarracksTile extends BuildingTile implements UIOptionBarHolder {
-
-    public BarracksTile(int x, int y, boolean ownedByAI) {
-        super(x, y, ownedByAI);
+    public BarracksTile(int x, int y, boolean ownedByAI, MapManager mapManager) {
+        super(x, y, ownedByAI, BuildingType.BARRACKS, mapManager);
     }
     private void spawnAttackUnit(GameWorld gameWorld, UnitType unitType) {
         List<Tile> adjacent = gameWorld.getMapManager().getAdjacentTiles(x, y);
