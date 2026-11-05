@@ -10,7 +10,7 @@ public class GameUpdateTimer extends AnimationTimer {
     }
     @Override
     public void handle(long l) {
-        game.update(l - lastUpdate);
+        game.update((l - lastUpdate) / 1e9);
         lastUpdate = l;
     }
     @Override

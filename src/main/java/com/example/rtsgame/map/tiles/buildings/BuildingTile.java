@@ -1,30 +1,41 @@
 package com.example.rtsgame.map.tiles.buildings;
 
-import com.example.rtsgame.Config;
-import com.example.rtsgame.Damageable;
-import com.example.rtsgame.GameWorld;
-import com.example.rtsgame.Utils;
-import com.example.rtsgame.map.MapManager;
+import com.example.rtsgame.*;
 import com.example.rtsgame.map.tiles.Tile;
-import javafx.scene.effect.DropShadow;
-import javafx.scene.paint.Color;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
 
-public abstract class BuildingTile extends Tile implements Damageable {
+public abstract class BuildingTile extends Tile implements Damageable, ActionProvider {
     protected boolean ownedByAI;
     public int health;
     protected int maxHealth;
     private boolean isSelected;
-    MapManager mapManager;
     private BuildingType buildingType;
 
-    public BuildingTile(int x, int y, boolean ownedByAI, BuildingType buildingType, MapManager mapManager) {
+    private Consumer<Damageable> onDestroyedCallback;
+
+    protected List<Action> actions;
+
+    public BuildingTile(int x, int y, boolean ownedByAI, BuildingType buildingType) {
         super(x, y, false);
         this.ownedByAI = ownedByAI;
         this.buildingType = buildingType;
-        this.mapManager = mapManager;
         this.maxHealth = buildingType.getMaxHealth();
         this.health = maxHealth;
+        actions = new ArrayList<>();
+        setupActions();
+    }
+    public void setOnDestroyedCallback(Consumer<Damageable> callback) {
+        this.onDestroyedCallback = callback;
+    }
+    protected abstract void setupActions();
+
+    @Override
+    public List<Action> getActions() {
+        return actions;
     }
 
     @Override
@@ -32,11 +43,18 @@ public abstract class BuildingTile extends Tile implements Damageable {
         int newHealth = health - damage;
         if(newHealth <= 0){
             health = 0;
-            mapManager.destroyBuilding(this);
+            if (onDestroyedCallback != null) {
+                onDestroyedCallback.accept(this);
+            }
         }
         else{
             health = newHealth;
         }
+    }
+
+    @Override
+    public void cleanup() {
+        setSelected(false);
     }
 
     @Override
@@ -76,6 +94,7 @@ public abstract class BuildingTile extends Tile implements Damageable {
     }
 
     public void setSelected(boolean selected) {
+        if (ownedByAI) return;
         isSelected = selected;
     }
     public boolean isSelected(){

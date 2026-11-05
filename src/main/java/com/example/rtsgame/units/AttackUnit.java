@@ -51,11 +51,11 @@ public class AttackUnit extends Unit {
     }
 
     @Override
-    public void update(double delta) {
+    public void update(double deltaTime) {
         if (hasTarget() && !isTargetInAttackRange() && !hasPath()) {
             super.setupPath(target.getCenterX(), target.getCenterY());
         }
-        super.update(delta);
+        super.update(deltaTime);
     }
 
     @Override

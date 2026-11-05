@@ -1,9 +1,6 @@
 package com.example.rtsgame.units.workerunit;
 
-import com.example.rtsgame.BuildSystem;
-import com.example.rtsgame.Config;
-import com.example.rtsgame.GameWorld;
-import com.example.rtsgame.UIOptionBarHolder;
+import com.example.rtsgame.*;
 import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.map.tiles.buildings.BuildingType;
 import com.example.rtsgame.statemachine.*;
@@ -15,13 +12,45 @@ import javafx.scene.control.Button;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WorkerUnit extends Unit implements UIOptionBarHolder {
+public class WorkerUnit extends Unit implements ActionProvider {
 
     private ConstructionTask constructionTask;
     private ConstructionListener constructionListener;
 
+    private List<Action> actions;
+
     public WorkerUnit(String fileName, AnimationData[] animationData, MapManager mapManager, int health, double speed, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
         super(fileName, animationData, mapManager, health, speed, x, y, ownByAI, spriteWidth, spriteHeight, scale);
+        actions = new ArrayList<>();
+        setupActions();
+    }
+    private void setupActions(){
+        Action a1 = new Action("Build Castle", gameWorld -> {
+            BuildSystem buildSystem = gameWorld.getBuildSystem();
+            if(buildSystem.isBuilding()){
+                buildSystem.stopPreviewing();
+            }
+            else{
+                buildSystem.startBuilding(BuildingType.CASTLE);
+            }
+        });
+        actions.add(a1);
+
+        Action a2 = new Action("Build barracks", gameWorld -> {
+            BuildSystem buildSystem = gameWorld.getBuildSystem();
+            if(buildSystem.isBuilding()){
+                buildSystem.stopPreviewing();
+            }
+            else{
+                buildSystem.startBuilding(BuildingType.BARRACKS);
+            }
+        });
+        actions.add(a2);
+    }
+
+    @Override
+    public List<Action> getActions() {
+        return actions;
     }
 
     @Override
@@ -95,34 +124,6 @@ public class WorkerUnit extends Unit implements UIOptionBarHolder {
 
     public ConstructionTask getConstructionTask() {
         return constructionTask;
-    }
-
-    @Override
-    public List<Node> getUI(GameWorld gameWorld) {
-        Button buildCastle = new Button("Build castle");
-        buildCastle.setOnAction(e -> {
-            BuildSystem buildSystem = gameWorld.getBuildSystem();
-            if(buildSystem.isBuilding()){
-                buildSystem.stopPreviewing();
-            }
-            else{
-                buildSystem.startBuilding(BuildingType.CASTLE);
-            }
-        });
-        Button buildBarracks = new Button("Build barracks");
-        buildBarracks.setOnAction(e -> {
-            BuildSystem buildSystem = gameWorld.getBuildSystem();
-            if(buildSystem.isBuilding()){
-                buildSystem.stopPreviewing();
-            }
-            else{
-                buildSystem.startBuilding(BuildingType.BARRACKS);
-            }
-        });
-        List<Node> ui = new ArrayList<>();
-        ui.add(buildCastle);
-        ui.add(buildBarracks);
-        return ui;
     }
 
 }

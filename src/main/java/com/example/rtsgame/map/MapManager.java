@@ -9,6 +9,7 @@ import com.example.rtsgame.map.tiles.buildings.BarracksTile;
 import com.example.rtsgame.map.tiles.buildings.BuildingTile;
 import com.example.rtsgame.map.tiles.buildings.BuildingType;
 import com.example.rtsgame.map.tiles.buildings.CastleTile;
+import com.example.rtsgame.units.pathfinding.Pathfinding;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -39,6 +40,8 @@ public class MapManager {
     int[][] tilesImageIds;
     BuildingPrefab castlePrefab;
     BuildingPrefab barracksPrefab;
+
+    public Pathfinding pathfinding;
 
     public MapManager(String fileName) throws ParserConfigurationException, IOException, SAXException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -94,6 +97,8 @@ public class MapManager {
             }
             this.processLayer(layerId, tiles, tileFactory);
         }
+
+        pathfinding = new Pathfinding(this);
     }
 
     private void processLayer(int layer, String[] tiles, TileFactory tileFactory){ //drawing main map layer
@@ -203,8 +208,8 @@ public class MapManager {
     public BuildingTile placeBuilding(BuildingType type, boolean ownByAI, int tileX, int tileY){
         BuildingTile building = null;
         switch (type){
-            case CASTLE -> building = new CastleTile(tileX, tileY, ownByAI, this);
-            case BARRACKS -> building = new CastleTile(tileX, tileY, ownByAI, this);
+            case CASTLE -> building = new CastleTile(tileX, tileY, ownByAI);
+            case BARRACKS -> building = new BarracksTile(tileX, tileY, ownByAI);
         }
         BuildingPrefab prefab = getBuildingPrefab(type);
         gc.drawImage(prefab.getImage(), tileX*Config.TILE_WIDTH, tileY*Config.TILE_HEIGHT);
@@ -300,5 +305,9 @@ public class MapManager {
     }
     public boolean isInBounds(int x, int y){
         return (x >= 0 && x < mapWidth && y >= 0 && y < mapHeight);
+    }
+
+    public int[] findNearestTraversableTile(int tileX, int tileY) {
+        return pathfinding.findNearestTraversableTile(tileX, tileY);
     }
 }

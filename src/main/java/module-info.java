@@ -1,7 +1,8 @@
 module com.example.rtsgame {
     requires javafx.controls;
     requires javafx.fxml;
-    requires java.desktop;
+    requires javafx.graphics;
+    requires java.xml;
 
 
     opens com.example.rtsgame to javafx.fxml;

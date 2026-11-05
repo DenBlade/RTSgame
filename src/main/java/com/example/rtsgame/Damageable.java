@@ -6,6 +6,7 @@ public interface Damageable {
     boolean isDestroyed();
     double getCenterX();
     double getCenterY();
+    void cleanup();
 
     default double getDistanceTo(double fromX, double fromY) {
         double dx = getCenterX() - fromX;

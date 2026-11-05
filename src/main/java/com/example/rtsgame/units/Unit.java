@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class Unit extends Group implements Damageable {
 
@@ -44,6 +45,7 @@ public class Unit extends Group implements Damageable {
     private double speed;
 
     private boolean removalRequested = false;
+    private Consumer<Damageable> onDestroyedCallback;
 
     public Unit(String fileName, AnimationData[] animationData, MapManager mapManager, int health, double speed, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
         this.spriteWidth = spriteWidth * scale;
@@ -57,7 +59,7 @@ public class Unit extends Group implements Damageable {
         setBottomY(y);
 
 
-        pathfinding = new Pathfinding(mapManager);
+        pathfinding = mapManager.pathfinding;
 
         spriteSheet = new Image(getClass().getResourceAsStream(fileName));
         spriteSheet = resample(spriteSheet, scale);
@@ -72,6 +74,9 @@ public class Unit extends Group implements Damageable {
         setPickOnBounds(false); //click is detected only if clicked on opaque pixels
 
         setupStateMachine();
+    }
+    public void setOnDestroyedCallback(Consumer<Damageable> callback) {
+        this.onDestroyedCallback = callback;
     }
     protected void setupStateMachine(){
         State<Unit> idleState = new IdleState<>();
@@ -296,12 +301,12 @@ public class Unit extends Group implements Damageable {
         return result;
     }
 
-    public void update(double delta) {
+    public void update(double deltaTime) { //in seconds
         if(isInsideCollidableTile()){
-            resolveIfInsideCollidableTile(delta);
+            resolveIfInsideCollidableTile(deltaTime);
         }
 
-        stateMachine.update(delta);
+        stateMachine.update(deltaTime);
     }
     public boolean isCloseTo(double targetX, double targetY) {
 
@@ -435,11 +440,21 @@ public class Unit extends Group implements Damageable {
         return ownByAI;
     }
 
+    @Override
+    public void cleanup() {
+        setSelected(false);
+    }
+
     public void requestRemoval(){
         removalRequested = true;
     }
     public boolean isRemovalRequested(){
         return removalRequested;
+    }
+    public void markForRemoval() {
+        if(onDestroyedCallback != null){
+            onDestroyedCallback.accept(this);
+        }
     }
 }
 

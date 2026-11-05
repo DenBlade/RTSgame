@@ -20,7 +20,7 @@ public class DeadState<T extends Unit> extends State<T>{
         currentTime += deltaTime;
         if(currentTime >= animationDuration / 1000.0) {
             owner.stopAnimation();
-            owner.requestRemoval();
+            owner.markForRemoval();
         }
         return this;
     }

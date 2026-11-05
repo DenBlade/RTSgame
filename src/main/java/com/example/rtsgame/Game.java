@@ -104,8 +104,10 @@ public class Game extends Group{
         updateTimer.start();
 
     }
-    public void update(long deltaTime){
-        
+    public void update(double deltaTime){
+
+        uiManager.updateFPS(deltaTime);
+
         if(uiManager.getUiOwner() != null && !uiManager.getUiOwner().isSelected()){
             uiManager.disableOptionsBar();
         }
@@ -142,17 +144,17 @@ public class Game extends Group{
             Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
 
             Tile clickedTile = gameWorld.getMapManager().getTileAt(mapPoint.getX(), mapPoint.getY());
-            if (clickedTile instanceof UIOptionBarHolder tileWithUI) {
+            if (clickedTile instanceof BuildingTile tileWithUI && !tileWithUI.ownByAi()) {
                 tileWithUI.setSelected(true);
                 System.out.println(tileWithUI.isSelected());
-                uiManager.enableOptionsBar(tileWithUI);
+                uiManager.enableOptionsBar((ActionProvider) tileWithUI);
             }
 
             Unit clickedUnit = inputManager.getClickedUnit();
             if(clickedUnit != null){
                 clickedUnit.toggleSelection();
                 selectedUnits = selectionManager.getSelectedPlayerUnits();
-                if(selectedUnits.size() == 1 && selectedUnits.getFirst() instanceof UIOptionBarHolder unitWithUI){
+                if(selectedUnits.size() == 1 && selectedUnits.getFirst() instanceof ActionProvider unitWithUI){
                     uiManager.enableOptionsBar(unitWithUI);
                 }
                 else{
@@ -196,20 +198,7 @@ public class Game extends Group{
             }
         }
 
-        for(Unit unit : playerUnits){
-            unit.update(deltaTime/1e9);
-            if(unit.isRemovalRequested()){
-                unitsToRemove.add(unit);
-            }
-        }
-
-        ListIterator<Unit> removeUnitsIt = unitsToRemove.listIterator();
-        while(removeUnitsIt.hasNext()){
-            Unit unit = removeUnitsIt.next();
-            gameWorld.removeUnit(unit);
-            removeUnitsIt.remove();
-        }
-
+        gameWorld.update(deltaTime);
 
         double moveX = 0;
         double moveY = 0;
@@ -229,7 +218,7 @@ public class Game extends Group{
                 moveX * Config.CAMERA_MOVEMENT_STEP,
                 moveY * Config.CAMERA_MOVEMENT_STEP
         );
-        camera.smoothCameraHandling(deltaTime/ 1000000000.0);
+        camera.smoothCameraHandling(deltaTime);
 
         inputManager.update();
     }
