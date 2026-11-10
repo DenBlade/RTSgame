@@ -4,6 +4,7 @@ import com.example.rtsgame.*;
 import com.example.rtsgame.actions.Action;
 import com.example.rtsgame.actions.ActionProvider;
 import com.example.rtsgame.map.MapManager;
+import com.example.rtsgame.map.tiles.ResourceTile;
 import com.example.rtsgame.map.tiles.buildings.BuildingType;
 import com.example.rtsgame.statemachine.*;
 import com.example.rtsgame.units.AnimationData;
@@ -16,6 +17,9 @@ public class WorkerUnit extends Unit implements ActionProvider {
 
     private ConstructionTask constructionTask;
     private ConstructionListener constructionListener;
+
+    private ResourceHarvestListener harvestListener;
+    private ResourceTile assignedResourceTile;
 
     private List<Action> actions;
 
@@ -56,6 +60,7 @@ public class WorkerUnit extends Unit implements ActionProvider {
     @Override
     public boolean setupPath(double targetX, double targetY) {
         clearConstructionTask();
+        clearAssignedResourceTile();
         return super.setupPath(targetX, targetY);
     }
 
@@ -66,6 +71,7 @@ public class WorkerUnit extends Unit implements ActionProvider {
         State<WorkerUnit> idleState = new IdleState<>();
         State<WorkerUnit> movingState = new MovingState<>();
         State<WorkerUnit> buildingState = new BuildingState();
+        State<WorkerUnit> gatheringState = new GatheringState();
         State<WorkerUnit> deadState = new DeadState<>();
 
         stateMachine = new StateMachine<>(this, idleState);
@@ -75,13 +81,13 @@ public class WorkerUnit extends Unit implements ActionProvider {
         Transition<WorkerUnit> movingFromIdle = new Transition<>((unit) -> unit.hasPath(), movingState);
         idleState.addTransition(movingFromIdle);
         idleState.addTransition(dead);
-//        Transition<WorkerUnit> buildingFromIdle = new Transition<>((unit) -> unit.assignedBuilding, buildingState);
-//        idleState.addTransition(buildingFromIdle);
 
         Transition<WorkerUnit> buildingFromMoving = new Transition<>((unit) -> unit.isFinishedMoving() && unit.hasConstructionTask(), buildingState);
+        Transition<WorkerUnit> gatheringFromMoving = new Transition<>((unit) -> unit.isFinishedMoving() && unit.hasAssignedResourceTile(), gatheringState);
         Transition<WorkerUnit> idleFromMoving = new Transition<>(Unit::isFinishedMoving, idleState);
 
         movingState.addTransition(buildingFromMoving);
+        movingState.addTransition(gatheringFromMoving);
         movingState.addTransition(idleFromMoving);
         movingState.addTransition(dead);
 
@@ -92,6 +98,12 @@ public class WorkerUnit extends Unit implements ActionProvider {
         buildingState.addTransition(movingFromBuilding);
         buildingState.addTransition(dead);
 
+        Transition<WorkerUnit> idleFromGathering = new Transition<>((unit) -> !unit.hasAssignedResourceTile(), idleState);
+        Transition<WorkerUnit> movingFromGathering = new Transition<>(Unit::hasPath, movingState);
+
+        gatheringState.addTransition(idleFromGathering);
+        gatheringState.addTransition(movingFromGathering);
+        gatheringState.addTransition(dead);
 
     }
 
@@ -100,6 +112,19 @@ public class WorkerUnit extends Unit implements ActionProvider {
     }
     public void setConstructionListener(ConstructionListener listener) {
         this.constructionListener = listener;
+    }
+    public void setResourceHarvestListener(ResourceHarvestListener listener) {
+        this.harvestListener = listener;
+    }
+    public void harvestResource() {
+        if (assignedResourceTile != null && harvestListener != null) {
+            harvestListener.onResourceHarvested(this, assignedResourceTile.getType(), assignedResourceTile.getGetPerHarvest());
+        }
+    }
+    public void gatherAt(ResourceTile resourceTile) {
+        double[] coords = resourceTile.getWorldCoordinates();
+        setupPath(coords[0], coords[1]);
+        this.assignedResourceTile = resourceTile;
     }
 
     public boolean buildAt(GameWorld gameWorld,BuildingType type, double x, double y) {
@@ -145,6 +170,18 @@ public class WorkerUnit extends Unit implements ActionProvider {
 
     public ConstructionTask getConstructionTask() {
         return constructionTask;
+    }
+
+    public boolean hasAssignedResourceTile() {
+        return assignedResourceTile != null;
+    }
+
+    public void clearAssignedResourceTile() {
+        assignedResourceTile = null;
+    }
+
+    public ResourceTile getAssignedResourceTile() {
+        return assignedResourceTile;
     }
 
 }

@@ -88,7 +88,7 @@ public class MapManager {
                     tileFactory = (x,y) -> new Tile(x, y, false);
                     break;
                 case "gold_mines":
-                    tileFactory = (x,y) -> new ResourceTile(x, y, ResourceType.GOLD, 1);
+                    tileFactory = (x,y) -> new ResourceTile(x, y, ResourceType.GOLD, Config.GOLD_MINE_HARVEST_VALUE);
                     break;
                     default:
                         tileFactory = (x,y) -> new Tile(x, y, true);

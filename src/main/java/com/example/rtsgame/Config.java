@@ -8,6 +8,7 @@ public class Config {
     public static final int TILE_HEIGHT = 32;
     public static final int[] PLAYER_CASTLE_POS = {2, 26};
     public static final int[] ENEMY_CASTLE_POS = {36, 2};
+    public static final int GOLD_MINE_HARVEST_VALUE = 3;
 
     public static final double CAMERA_MOVEMENT_SPEED = 8;
     public static final double CAMERA_MOVEMENT_STEP = 15;
@@ -30,6 +31,7 @@ public class Config {
     public static final int WORKER_GOLD_PRICE = 30;
     public static final int WORKER_MAX_HEALTH = 3;
     public static final int WORKER_MOVEMENT_SPEED = 60;
+    public static final double WORKER_HARVEST_INTERVAL = 1.0;
 
     public static final AnimationData WORKER_IDLE_ANIM = new AnimationData(AnimationType.IDLE, 0, 4);
     public static final AnimationData WORKER_WALK_ANIM = new AnimationData(AnimationType.WALK, 3, 6);

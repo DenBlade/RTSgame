@@ -23,9 +23,8 @@ public class Pathfinding {
             Tile targetTile = mapManager.getTile(endTileX, endTileY);
             int[] nearest = null;
 
-            if (targetTile instanceof BuildingTile buildingTile) {
-                nearest = findClosestPerimeterTile(startTileX, startTileY, buildingTile);
-            }
+            nearest = findClosestPerimeterTile(startTileX, startTileY, targetTile);
+
             if (nearest == null) {
                 nearest = findNearestTraversableTile(endTileX, endTileY);
             }
@@ -117,12 +116,17 @@ public class Pathfinding {
         return null;
     }
 
-    public int[] findClosestPerimeterTile(int startX, int startY, BuildingTile building) {
-        BuildingType type = building.getBuildingType();
-        int originX = building.getX();
-        int originY = building.getY();
-        int width = type.getWidth();
-        int height = type.getHeight();
+    public int[] findClosestPerimeterTile(int startX, int startY, Tile targetTile) {
+        int originX = targetTile.getX();
+        int originY = targetTile.getY();
+        int width = 1;
+        int height = 1;
+
+        if (targetTile instanceof BuildingTile building) {
+            BuildingType type = building.getBuildingType();
+            width = type.getWidth();
+            height = type.getHeight();
+        }
 
         List<int[]> candidates = new ArrayList<>();
 

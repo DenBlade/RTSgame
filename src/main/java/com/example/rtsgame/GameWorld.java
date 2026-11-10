@@ -47,6 +47,7 @@ public class GameWorld {
         playerUnits.add(unit);
         map.getChildren().add(unit);
         unit.setOnDestroyedCallback(this::markForDestruction);
+
         if (unit instanceof WorkerUnit worker) {
             worker.setConstructionListener(new ConstructionListener() {
                 @Override
@@ -58,12 +59,16 @@ public class GameWorld {
                     }
                     return false;
                 }
-
                 @Override
                 public void onConstructionCancelled(WorkerUnit worker, ConstructionTask task) {
                     ResourceManager targetResources = getResourceManager(worker.ownByAi());
                     targetResources.addResource(task.getBuildingType().getResourceAmount());
                 }
+            });
+
+            worker.setResourceHarvestListener((workerUnit, resourceType, amount) -> {
+                ResourceManager targetResources = getResourceManager(workerUnit.ownByAi());
+                targetResources.addResource(resourceType, amount);
             });
         }
     }

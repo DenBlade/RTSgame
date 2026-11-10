@@ -2,6 +2,7 @@ package com.example.rtsgame;
 
 import com.example.rtsgame.actions.ActionProvider;
 import com.example.rtsgame.map.MapManager;
+import com.example.rtsgame.map.tiles.ResourceTile;
 import com.example.rtsgame.map.tiles.Tile;
 import com.example.rtsgame.map.tiles.buildings.BuildingTile;
 import com.example.rtsgame.map.tiles.buildings.BuildingType;
@@ -180,16 +181,24 @@ public class Game extends Group{
             Unit clickedUnit = inputManager.getClickedUnit();
             Tile clickedTile = gameWorld.getMapManager().getTileAt(mapPoint.getX(), mapPoint.getY());
 
+            ResourceTile targetResourceTile = null;
             Damageable targetDamageable = null;
             if (clickedUnit != null) {
                 targetDamageable = clickedUnit;
             } else if (clickedTile instanceof BuildingTile buildingTile) {
                 targetDamageable = buildingTile;
             }
+            else if (clickedTile instanceof ResourceTile) {
+                targetResourceTile = (ResourceTile) clickedTile;
+            }
             for(Unit unit : selectedUnits){
                 if (unit instanceof AttackUnit attackUnit && (targetDamageable != null && targetDamageable.ownByAi())) {
                     attackUnit.attackTarget(targetDamageable);
-                } else {
+                }
+                else if(unit instanceof WorkerUnit workerUnit && targetResourceTile != null){
+                    workerUnit.gatherAt(targetResourceTile);
+                }
+                else {
                     unit.setupPath(mapPoint.getX(), mapPoint.getY());
                 }
             }

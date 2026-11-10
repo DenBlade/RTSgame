@@ -10,7 +10,13 @@ public class ResourceTile extends Tile {
         this.type = type;
         this.getPerHarvest = getPerHarvest;
     }
+    public ResourceType getType() {
+        return type;
+    }
 
+    public int getGetPerHarvest() {
+        return getPerHarvest;
+    }
     @Override
     public Tile cloneWithPosition(int x, int y) {
         return new ResourceTile(x, y, this.type, this.getPerHarvest);
