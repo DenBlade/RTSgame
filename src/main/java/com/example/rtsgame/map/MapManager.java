@@ -310,4 +310,17 @@ public class MapManager {
     public int[] findNearestTraversableTile(int tileX, int tileY) {
         return pathfinding.findNearestTraversableTile(tileX, tileY);
     }
+    public boolean canPlaceBuilding(int tileX, int tileY, BuildingType buildingType) {
+        int width = buildingType.getWidth();
+        int height = buildingType.getHeight();
+
+        for (int i = tileX; i < tileX + width; i++) {
+            for (int j = tileY; j < tileY + height; j++) {
+                if (!isInBounds(i, j) || !getTile(i, j).isTraversable()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

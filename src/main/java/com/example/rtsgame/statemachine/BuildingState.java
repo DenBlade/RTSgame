@@ -31,6 +31,5 @@ public class BuildingState extends State<WorkerUnit>{
 
     @Override
     public void exit(WorkerUnit owner) {
-        owner.clearConstructionTask();
     }
 }

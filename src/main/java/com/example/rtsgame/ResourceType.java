@@ -1,5 +1,6 @@
 package com.example.rtsgame;
 
 public enum ResourceType {
-    GOLD
+    GOLD,
+    WOOD
 }

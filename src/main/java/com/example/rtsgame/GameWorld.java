@@ -4,6 +4,7 @@ import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.map.tiles.buildings.BuildingTile;
 import com.example.rtsgame.map.tiles.buildings.BuildingType;
 import com.example.rtsgame.units.Unit;
+import com.example.rtsgame.units.workerunit.ConstructionListener;
 import com.example.rtsgame.units.workerunit.ConstructionTask;
 import com.example.rtsgame.units.workerunit.WorkerUnit;
 import javafx.scene.Group;
@@ -15,17 +16,23 @@ public class GameWorld {
     private Group map;
     private MapManager mapManager;
     private List<Unit> playerUnits;
-    private BuildSystem buildSystem;
+    private BuildPreviewSystem buildPreviewSystem;
     private List<BuildingTile> buildings;
+
+    private final ResourceManager playerResourceManager;
+    private final ResourceManager aiResourceManager;
 
     private final Queue<Damageable> destructionQueue = new ArrayDeque<>();
 
     public GameWorld(Group map, MapManager mapManager) {
         this.map = map;
         this.mapManager = mapManager;
-        this.buildSystem = new BuildSystem(this);
+        this.buildPreviewSystem = new BuildPreviewSystem(this);
         playerUnits = new ArrayList<>();
         buildings = new LinkedList<>();
+        this.playerResourceManager = new ResourceManager();
+        this.aiResourceManager = new ResourceManager();
+        playerResourceManager.addResource(ResourceType.GOLD, 1000);
     }
 
     public void update(double deltaTime){
@@ -41,12 +48,24 @@ public class GameWorld {
         map.getChildren().add(unit);
         unit.setOnDestroyedCallback(this::markForDestruction);
         if (unit instanceof WorkerUnit worker) {
-            worker.setConstructionListener(this::onConstructionFinished);
+            worker.setConstructionListener(new ConstructionListener() {
+                @Override
+                public boolean onConstructionFinished(WorkerUnit worker, ConstructionTask task) {
+                    if (mapManager.canPlaceBuilding(task.getTileX(), task.getTileY(), task.getBuildingType())) {
+                        worker.clearConstructionTask();
+                        placeBuilding(task.getBuildingType(), worker.ownByAi(), task.getTileX(), task.getTileY());
+                        return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public void onConstructionCancelled(WorkerUnit worker, ConstructionTask task) {
+                    ResourceManager targetResources = getResourceManager(worker.ownByAi());
+                    targetResources.addResource(task.getBuildingType().getResourceAmount());
+                }
+            });
         }
-    }
-    private boolean onConstructionFinished(WorkerUnit worker, ConstructionTask task) {
-        worker.clearConstructionTask();
-        return buildSystem.placeBuilding(task.getBuildingType(), task.getTileX(), task.getTileY());
     }
     private void markForDestruction(Damageable entity) {
         if (!destructionQueue.contains(entity)) {
@@ -87,11 +106,21 @@ public class GameWorld {
         return map;
     }
 
-    public BuildSystem getBuildSystem() {
-        return buildSystem;
+    public BuildPreviewSystem getBuildPreviewSystem() {
+        return buildPreviewSystem;
     }
     public void removeUnit(Unit unit){
         playerUnits.remove(unit);
         map.getChildren().remove(unit);
+    }
+    public ResourceManager getPlayerResourceManager() {
+        return playerResourceManager;
+    }
+
+    public ResourceManager getAiResourceManager() {
+        return aiResourceManager;
+    }
+    public ResourceManager getResourceManager(boolean ownByAI) {
+        return ownByAI ? aiResourceManager : playerResourceManager;
     }
 }

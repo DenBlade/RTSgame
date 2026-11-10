@@ -11,4 +11,6 @@ module com.example.rtsgame {
     opens com.example.rtsgame.map.tiles to javafx.fxml;
     exports com.example.rtsgame.map;
     opens com.example.rtsgame.map to javafx.fxml;
+    exports com.example.rtsgame.actions;
+    opens com.example.rtsgame.actions to javafx.fxml;
 }

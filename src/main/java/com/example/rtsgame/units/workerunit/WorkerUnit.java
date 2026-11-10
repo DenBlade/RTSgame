@@ -1,13 +1,13 @@
 package com.example.rtsgame.units.workerunit;
 
 import com.example.rtsgame.*;
+import com.example.rtsgame.actions.Action;
+import com.example.rtsgame.actions.ActionProvider;
 import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.map.tiles.buildings.BuildingType;
 import com.example.rtsgame.statemachine.*;
 import com.example.rtsgame.units.AnimationData;
 import com.example.rtsgame.units.Unit;
-import javafx.scene.Node;
-import javafx.scene.control.Button;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,24 +25,24 @@ public class WorkerUnit extends Unit implements ActionProvider {
         setupActions();
     }
     private void setupActions(){
-        Action a1 = new Action("Build Castle", gameWorld -> {
-            BuildSystem buildSystem = gameWorld.getBuildSystem();
-            if(buildSystem.isBuilding()){
-                buildSystem.stopPreviewing();
+        Action a1 = new Action(BuildingType.CASTLE.getResourceAmount(), "Build Castle", gameWorld -> {
+            BuildPreviewSystem buildPreviewSystem = gameWorld.getBuildPreviewSystem();
+            if(buildPreviewSystem.isBuilding()){
+                buildPreviewSystem.stopPreviewing();
             }
             else{
-                buildSystem.startBuilding(BuildingType.CASTLE);
+                buildPreviewSystem.startBuilding(BuildingType.CASTLE);
             }
         });
         actions.add(a1);
 
-        Action a2 = new Action("Build barracks", gameWorld -> {
-            BuildSystem buildSystem = gameWorld.getBuildSystem();
-            if(buildSystem.isBuilding()){
-                buildSystem.stopPreviewing();
+        Action a2 = new Action(BuildingType.BARRACKS.getResourceAmount(), "Build barracks", gameWorld -> {
+            BuildPreviewSystem buildPreviewSystem = gameWorld.getBuildPreviewSystem();
+            if(buildPreviewSystem.isBuilding()){
+                buildPreviewSystem.stopPreviewing();
             }
             else{
-                buildSystem.startBuilding(BuildingType.BARRACKS);
+                buildPreviewSystem.startBuilding(BuildingType.BARRACKS);
             }
         });
         actions.add(a2);
@@ -102,13 +102,29 @@ public class WorkerUnit extends Unit implements ActionProvider {
         this.constructionListener = listener;
     }
 
-    public void buildAt(BuildingType type, double x, double y) {
+    public boolean buildAt(GameWorld gameWorld,BuildingType type, double x, double y) {
         int[] tileCoords = MapManager.convertToTileCoordinates(new double[]{x, y});
+
+        if (!gameWorld.getMapManager().canPlaceBuilding(tileCoords[0], tileCoords[1], type)) {
+            System.out.println("Cannot build here: tile is blocked");
+            return false;
+        }
+
+        ResourceManager targetResources = gameWorld.getResourceManager(this.ownByAI);
+        if (!targetResources.trySpend(type.getResourceAmount())) {
+            System.out.println("Not enough resources for " + (ownByAI ? "AI" : "Player") + " to build");
+            return false;
+        }
+
         double[] layoutCoords = MapManager.convertToWorldCoordinates(tileCoords);
         setupPath(layoutCoords[0], layoutCoords[1]);
-        constructionTask = new ConstructionTask(type, tileCoords[0], tileCoords[1]);
+        this.constructionTask = new ConstructionTask(type, tileCoords[0], tileCoords[1]);
+        return true;
     }
     public boolean finishConstruction() {
+        if (constructionTask != null) {
+            constructionTask.markCompleted();
+        }
         if (constructionListener != null) {
             return constructionListener.onConstructionFinished(this, constructionTask);
         }
@@ -116,6 +132,11 @@ public class WorkerUnit extends Unit implements ActionProvider {
     }
 
     public void clearConstructionTask(){
+        if (constructionTask != null && !constructionTask.isCompleted()) {
+            if (constructionListener != null) {
+                constructionListener.onConstructionCancelled(this, constructionTask);
+            }
+        }
         constructionTask = null;
     }
     public boolean hasConstructionTask() {

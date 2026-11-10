@@ -1,13 +1,13 @@
 package com.example.rtsgame;
 
+import com.example.rtsgame.actions.Action;
+import com.example.rtsgame.actions.ActionProvider;
 import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.Scene;
-import javafx.scene.control.TextArea;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 
 public class UIManager extends Group {
     private GameWorld gameWorld;
@@ -15,6 +15,9 @@ public class UIManager extends Group {
 
     private VBox optionsBar;
     private ActionProvider uiOwner;
+
+    private HBox resourceBar;
+    private Label goldLabel;
 
     private Label fpsLabel;
     private long frameCount = 0;
@@ -29,7 +32,23 @@ public class UIManager extends Group {
         fpsLabel = new Label("FPS: --");
         fpsLabel.setStyle("-fx-text-fill: #00FF00; -fx-font-size: 16px; -fx-font-weight: bold; -fx-effect: dropshadow(three-pass-box, black, 4, 0, 1, 1);");
 
-        getChildren().addAll(optionsBar, fpsLabel);
+        ResourceManager playerResources = gameWorld.getPlayerResourceManager();
+        resourceBar = new HBox(15);
+        resourceBar.setStyle("-fx-background-color: rgba(0, 0, 0, 0.5); -fx-padding: 8px 15px; -fx-background-radius: 5;");
+        resourceBar.layoutXProperty().bind(scene.widthProperty()
+                        .subtract(resourceBar.widthProperty())
+                        .subtract(50)
+        );
+
+        goldLabel = new Label();
+        goldLabel.setStyle("-fx-text-fill: #f3ebeb; -fx-font-size: 14px; -fx-font-weight: bold;");
+        goldLabel.textProperty().bind(
+                playerResources.amountProperty(ResourceType.GOLD).asString("Gold: %d")
+        );
+
+        resourceBar.getChildren().addAll(goldLabel);
+
+        getChildren().addAll(optionsBar, fpsLabel, resourceBar);
         setLayout();
     }
     public void updateFPS(double deltaTime) {
@@ -49,13 +68,21 @@ public class UIManager extends Group {
 
         fpsLabel.setLayoutX(10);
         fpsLabel.setLayoutY(10);
+
+        resourceBar.setLayoutY(10);
     }
 
     public void enableOptionsBar(ActionProvider provider) {
         optionsBar.getChildren().clear();
 
         for (Action action : provider.getActions()) {
-            Button button = new Button(action.getName());
+            String buttonText = action.getName();
+            ResourceAmount resourceAmount = action.getResourceAmount();
+            if(resourceAmount != null){
+                buttonText = resourceAmount.amount() + " " + resourceAmount.resourceType() + " - " + buttonText;
+            }
+
+            Button button = new Button(buttonText);
             button.setOnAction(e -> action.execute(gameWorld));
             optionsBar.getChildren().add(button);
         }

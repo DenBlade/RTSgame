@@ -7,14 +7,14 @@ import javafx.scene.effect.ColorInput;
 import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 
-public class BuildSystem {
+public class BuildPreviewSystem {
 
     public BuildingType selectedBuilding;
     private final GameWorld world;
     ImageView preview;
     Blend blend;
 
-    public BuildSystem(GameWorld world){
+    public BuildPreviewSystem(GameWorld world){
         this.world = world;
         preview = new ImageView();
         preview.setOpacity(0.5);
@@ -48,28 +48,6 @@ public class BuildSystem {
         return selectedBuilding != null;
     }
 
-    public boolean placeBuilding(BuildingType buildingType, int tileX, int tileY){
-        if(canPlaceBuilding(tileX,tileY,buildingType)){
-            world.placeBuilding(buildingType, false, tileX, tileY);
-            return true;
-        }
-        stopPreviewing();
-        return false;
-    }
-    public boolean canPlaceBuilding(int x, int y, BuildingType buildingType){
-        int width = buildingType.getWidth();
-        int height = buildingType.getHeight();
-        for(int i=x;i<x+width;i++){
-            for(int j=y;j<y+height;j++){
-                if(!world.getMapManager().getTile(i,j).isTraversable()){
-                    return false;
-                }
-
-            }
-        }
-
-        return true;
-    }
     public ImageView getPreview(){
         return preview;
     }

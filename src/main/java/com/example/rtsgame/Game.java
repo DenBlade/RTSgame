@@ -1,5 +1,6 @@
 package com.example.rtsgame;
 
+import com.example.rtsgame.actions.ActionProvider;
 import com.example.rtsgame.map.MapManager;
 import com.example.rtsgame.map.tiles.Tile;
 import com.example.rtsgame.map.tiles.buildings.BuildingTile;
@@ -21,7 +22,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 
 public class Game extends Group{
     Group root;
@@ -34,7 +34,7 @@ public class Game extends Group{
     InputManager inputManager;
     GameUpdateTimer updateTimer;
     GameWorld gameWorld;
-    BuildSystem buildSystem;
+    BuildPreviewSystem buildPreviewSystem;
     UIManager uiManager;
     SelectionManager selectionManager;
     double mapPixelWidth, mapPixelHeight;
@@ -58,7 +58,7 @@ public class Game extends Group{
         root.getChildren().add(map);
 
         gameWorld = new GameWorld(map, mapManager);
-        buildSystem = gameWorld.getBuildSystem();
+        buildPreviewSystem = gameWorld.getBuildPreviewSystem();
         playerUnits = gameWorld.getPlayerUnits();
         unitsToRemove = new ArrayList<>();
         selectionManager = new SelectionManager(playerUnits);
@@ -114,25 +114,25 @@ public class Game extends Group{
 
         if(inputManager.isPressed(KeyCode.ESCAPE)){
             uiManager.disableOptionsBar();
-            buildSystem.stopPreviewing();
+            buildPreviewSystem.stopPreviewing();
             for(Unit unit : selectedUnits){
                 unit.setSelected(false);
             }
         }
 
-        if(buildSystem.isBuilding()){
+        if(buildPreviewSystem.isBuilding()){
             double[] mousePos = inputManager.getMousePosition();
             Point2D mapPoint = map.sceneToLocal(mousePos[0], mousePos[1]);
             int[] temp = MapManager.convertToTileCoordinates(new double[]{mapPoint.getX(), mapPoint.getY()});
             double[] previewPos = MapManager.convertToWorldCoordinates(temp);
-            ImageView view = buildSystem.getPreview();
+            ImageView view = buildPreviewSystem.getPreview();
 
             int[] tileCoords = MapManager.convertToTileCoordinates(new double[]{mapPoint.getX(), mapPoint.getY()});
-            if(gameWorld.getBuildSystem().canPlaceBuilding(tileCoords[0], tileCoords[1], gameWorld.getBuildSystem().selectedBuilding)){
-                gameWorld.getBuildSystem().changePreviewColorBlending(Color.GREEN);
+            if(gameWorld.getMapManager().canPlaceBuilding(tileCoords[0], tileCoords[1], gameWorld.getBuildPreviewSystem().selectedBuilding)){
+                gameWorld.getBuildPreviewSystem().changePreviewColorBlending(Color.GREEN);
             }
             else {
-                gameWorld.getBuildSystem().changePreviewColorBlending(Color.RED);
+                gameWorld.getBuildPreviewSystem().changePreviewColorBlending(Color.RED);
             }
 
             view.setLayoutX(previewPos[0]);
@@ -147,7 +147,7 @@ public class Game extends Group{
             if (clickedTile instanceof BuildingTile tileWithUI && !tileWithUI.ownByAi()) {
                 tileWithUI.setSelected(true);
                 System.out.println(tileWithUI.isSelected());
-                uiManager.enableOptionsBar((ActionProvider) tileWithUI);
+                uiManager.enableOptionsBar(tileWithUI);
             }
 
             Unit clickedUnit = inputManager.getClickedUnit();
@@ -162,16 +162,13 @@ public class Game extends Group{
                 }
             }
 
-            if(gameWorld.getBuildSystem().isBuilding()){
+            if (gameWorld.getBuildPreviewSystem().isBuilding()) {
                 WorkerUnit unit = (WorkerUnit) selectedUnits.getFirst();
-                int[] tileCoords = MapManager.convertToTileCoordinates(new double[]{mapPoint.getX(), mapPoint.getY()});
-                if(gameWorld.getBuildSystem().canPlaceBuilding(tileCoords[0], tileCoords[1], gameWorld.getBuildSystem().selectedBuilding)){
-                    unit.buildAt(gameWorld.getBuildSystem().selectedBuilding, mapPoint.getX(), mapPoint.getY());
-                }
-                else{
-                    gameWorld.getBuildSystem().stopPreviewing();
-                    System.out.println("Cannot build here");
-                }
+                BuildingType selectedBuilding = gameWorld.getBuildPreviewSystem().selectedBuilding;
+
+                unit.buildAt(gameWorld, selectedBuilding, mapPoint.getX(), mapPoint.getY());
+
+                gameWorld.getBuildPreviewSystem().stopPreviewing();
                 return;
             }
 

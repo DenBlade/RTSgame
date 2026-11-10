@@ -15,6 +15,7 @@ public class Config {
     public static final double UNIT_COLLISION_PUSH_SPEED = 100;
     public static final double UNIT_DEATH_ANIM_TIME = 2;
 
+    public static final int SWORDSMAN_GOLD_PRICE = 50;
     public static final double SWORDSMAN_MOVEMENT_SPEED = 70;
     public static final int SWORDSMAN_MAX_HEALTH = 20;
     public static final int SWORDSMAN_ATTACK_DAMAGE = 5;
@@ -26,6 +27,7 @@ public class Config {
     public static final AnimationData SWORDSMAN_DEATH_ANIM = new AnimationData(AnimationType.DEATH, 5, 4);
     public static final AnimationData SWORDSMAN_ATTACK_ANIM = new AnimationData(AnimationType.ATTACK, 3, 6);
 
+    public static final int WORKER_GOLD_PRICE = 30;
     public static final int WORKER_MAX_HEALTH = 3;
     public static final int WORKER_MOVEMENT_SPEED = 60;
 

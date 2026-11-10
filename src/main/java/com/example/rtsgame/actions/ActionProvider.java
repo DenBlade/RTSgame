@@ -1,4 +1,4 @@
-package com.example.rtsgame;
+package com.example.rtsgame.actions;
 
 import java.util.List;
 

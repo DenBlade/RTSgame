@@ -7,6 +7,7 @@ public class ConstructionTask {
     private final BuildingType buildingType;
     private final int tileX;
     private final int tileY;
+    private boolean completed = false;
 
     public ConstructionTask(
             BuildingType buildingType,
@@ -20,6 +21,13 @@ public class ConstructionTask {
 
     public BuildingType getBuildingType() {
         return buildingType;
+    }
+    public void markCompleted() {
+        this.completed = true;
+    }
+
+    public boolean isCompleted() {
+        return completed;
     }
 
     public int getTileX() {

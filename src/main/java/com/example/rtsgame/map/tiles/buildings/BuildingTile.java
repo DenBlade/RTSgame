@@ -1,6 +1,8 @@
 package com.example.rtsgame.map.tiles.buildings;
 
 import com.example.rtsgame.*;
+import com.example.rtsgame.actions.Action;
+import com.example.rtsgame.actions.ActionProvider;
 import com.example.rtsgame.map.tiles.Tile;
 
 import java.util.ArrayList;
