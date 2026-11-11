@@ -88,16 +88,17 @@ public class Game extends Group{
             uiManager.setLayout();
         });
 
-        AttackUnit swordsman = AttackUnit.createSwordsman(mapManager, false, 200, 200);
-        gameWorld.spawnUnit(swordsman);
-        AttackUnit swordsman2 = AttackUnit.createSwordsman(mapManager, true, 500, 200);
-        gameWorld.spawnUnit(swordsman2);
-
-        WorkerUnit worker = WorkerUnit.createWorker(mapManager, false, 300, 200);
-        gameWorld.spawnUnit(worker);
 
         gameWorld.placeBuilding(BuildingType.CASTLE, true, Config.ENEMY_CASTLE_POS[0], Config.ENEMY_CASTLE_POS[1]);
         gameWorld.placeBuilding(BuildingType.CASTLE, false, Config.PLAYER_CASTLE_POS[0], Config.PLAYER_CASTLE_POS[1]);
+
+        WorkerUnit worker = WorkerUnit.createWorker(mapManager, false, Config.PLAYER_CASTLE_POS[0]*Config.TILE_WIDTH, Config.PLAYER_CASTLE_POS[1]*Config.TILE_HEIGHT);
+        gameWorld.spawnUnit(worker);
+        WorkerUnit enemyWorker = WorkerUnit.createWorker(mapManager, true, Config.ENEMY_CASTLE_POS[0]*Config.TILE_WIDTH+2*Config.TILE_WIDTH, Config.ENEMY_CASTLE_POS[1]*Config.TILE_HEIGHT+2*Config.TILE_HEIGHT);
+        gameWorld.spawnUnit(enemyWorker);
+
+        AttackUnit swordsman2 = AttackUnit.createSwordsman(mapManager, true, 500, 200);
+        gameWorld.spawnUnit(swordsman2);
 
         selectedUnits = selectionManager.getSelectedPlayerUnits();
 
@@ -119,6 +120,7 @@ public class Game extends Group{
             for(Unit unit : selectedUnits){
                 unit.setSelected(false);
             }
+            selectedUnits = selectionManager.getSelectedPlayerUnits();
         }
 
         if(buildPreviewSystem.isBuilding()){

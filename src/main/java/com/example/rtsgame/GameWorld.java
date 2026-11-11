@@ -1,6 +1,7 @@
 package com.example.rtsgame;
 
 import com.example.rtsgame.map.MapManager;
+import com.example.rtsgame.map.fogofwar.FogOfWar;
 import com.example.rtsgame.map.tiles.buildings.BuildingTile;
 import com.example.rtsgame.map.tiles.buildings.BuildingType;
 import com.example.rtsgame.units.Unit;
@@ -15,6 +16,7 @@ public class GameWorld {
 
     private Group map;
     private MapManager mapManager;
+    private FogOfWar fogOfWar;
     private List<Unit> playerUnits;
     private BuildPreviewSystem buildPreviewSystem;
     private List<BuildingTile> buildings;
@@ -33,6 +35,8 @@ public class GameWorld {
         this.playerResourceManager = new ResourceManager();
         this.aiResourceManager = new ResourceManager();
         playerResourceManager.addResource(ResourceType.GOLD, 1000);
+        this.fogOfWar = new FogOfWar(mapManager.mapWidth, mapManager.mapHeight);
+        map.getChildren().add(fogOfWar.getCanvas());
     }
 
     public void update(double deltaTime){
@@ -41,6 +45,10 @@ public class GameWorld {
         }
 
         flushDestructionQueue();
+
+        if (Config.ENABLE_FOW && fogOfWar != null) {
+            fogOfWar.update(playerUnits, buildings);
+        }
     }
 
     public void spawnUnit(Unit unit){

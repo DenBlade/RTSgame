@@ -44,7 +44,6 @@ public class Unit extends Group implements Damageable {
     protected int health;
     private double speed;
 
-    private boolean removalRequested = false;
     private Consumer<Damageable> onDestroyedCallback;
 
     public Unit(String fileName, AnimationData[] animationData, MapManager mapManager, int health, double speed, double x, double y, boolean ownByAI, int spriteWidth, int spriteHeight, double scale) {
@@ -398,7 +397,7 @@ public class Unit extends Group implements Damageable {
     }
     @Override
     public boolean isDestroyed() {
-        return health <= 0 || removalRequested;
+        return health <= 0;
     }
     public double getCenterX(){
         return getLayoutX() + spriteWidth/2;
@@ -445,12 +444,6 @@ public class Unit extends Group implements Damageable {
         setSelected(false);
     }
 
-    public void requestRemoval(){
-        removalRequested = true;
-    }
-    public boolean isRemovalRequested(){
-        return removalRequested;
-    }
     public void markForRemoval() {
         if(onDestroyedCallback != null){
             onDestroyedCallback.accept(this);

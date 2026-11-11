@@ -82,7 +82,7 @@ public abstract class BuildingTile extends Tile implements Damageable, ActionPro
         int width = buildingType.getWidth();
         int height = buildingType.getHeight();
 
-        double minX = Config.TILE_WIDTH;
+        double minX = x * Config.TILE_WIDTH;
         double maxX = (x + width) * Config.TILE_WIDTH;
         double minY = y * Config.TILE_HEIGHT;
         double maxY = (y + height) * Config.TILE_HEIGHT;

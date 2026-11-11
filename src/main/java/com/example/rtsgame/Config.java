@@ -13,6 +13,10 @@ public class Config {
     public static final double CAMERA_MOVEMENT_SPEED = 8;
     public static final double CAMERA_MOVEMENT_STEP = 15;
 
+    public static final boolean ENABLE_FOW = true; // debug purposes
+    public static final int BUILDING_VISION_RADIUS = 2;
+
+    public static final int UNIT_VISION_RADIUS = 2;
     public static final double UNIT_COLLISION_PUSH_SPEED = 100;
     public static final double UNIT_DEATH_ANIM_TIME = 2;
 
@@ -20,7 +24,7 @@ public class Config {
     public static final double SWORDSMAN_MOVEMENT_SPEED = 70;
     public static final int SWORDSMAN_MAX_HEALTH = 20;
     public static final int SWORDSMAN_ATTACK_DAMAGE = 5;
-    public static final double SWORDSMAN_ATTACK_RANGE = 30.0;
+    public static final double SWORDSMAN_ATTACK_RANGE = 48.0;
     public static final double SWORDSMAN_ATTACK_COOLDOWN = 1.0;
 
     public static final AnimationData SWORDSMAN_IDLE_ANIM = new AnimationData(AnimationType.IDLE, 0, 4);
@@ -29,7 +33,7 @@ public class Config {
     public static final AnimationData SWORDSMAN_ATTACK_ANIM = new AnimationData(AnimationType.ATTACK, 3, 6);
 
     public static final int WORKER_GOLD_PRICE = 30;
-    public static final int WORKER_MAX_HEALTH = 3;
+    public static final int WORKER_MAX_HEALTH = 12;
     public static final int WORKER_MOVEMENT_SPEED = 60;
     public static final double WORKER_HARVEST_INTERVAL = 1.0;
 

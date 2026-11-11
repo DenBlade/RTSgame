@@ -28,6 +28,10 @@ public class UIManager extends Group {
         this.scene = scene;
 
         optionsBar = new VBox();
+        optionsBar.layoutXProperty().bind(scene.widthProperty()
+                .subtract(optionsBar.widthProperty())
+                .subtract(20)
+        );
 
         fpsLabel = new Label("FPS: --");
         fpsLabel.setStyle("-fx-text-fill: #00FF00; -fx-font-size: 16px; -fx-font-weight: bold; -fx-effect: dropshadow(three-pass-box, black, 4, 0, 1, 1);");
@@ -63,7 +67,6 @@ public class UIManager extends Group {
         }
     }
     public void setLayout(){
-        optionsBar.setLayoutX(scene.getWidth()-100);
         optionsBar.setLayoutY(scene.getHeight()-100);
 
         fpsLabel.setLayoutX(10);
@@ -83,6 +86,7 @@ public class UIManager extends Group {
             }
 
             Button button = new Button(buttonText);
+            button.setMaxWidth(Double.MAX_VALUE);
             button.setOnAction(e -> action.execute(gameWorld));
             optionsBar.getChildren().add(button);
         }
