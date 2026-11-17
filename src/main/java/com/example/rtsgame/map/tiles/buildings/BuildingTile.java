@@ -41,7 +41,7 @@ public abstract class BuildingTile extends Tile implements Damageable, ActionPro
     }
 
     @Override
-    public void takeDamage(int damage) {
+    public void takeDamage(int damage, Damageable attacker) {
         int newHealth = health - damage;
         if(newHealth <= 0){
             health = 0;

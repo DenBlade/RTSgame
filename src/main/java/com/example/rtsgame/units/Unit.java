@@ -424,7 +424,7 @@ public class Unit extends Group implements Damageable {
         return !path.isEmpty();
     }
     @Override
-    public void takeDamage(int damage) {
+    public void takeDamage(int damage, Damageable attacker) {
         int newHealth = health - damage;
         if(newHealth <= 0){
             health = 0;

@@ -34,7 +34,7 @@ public class AttackState extends State<AttackUnit> {
             cooldownTimer += deltaTime;
             if (cooldownTimer >= unit.getAttackCooldown()) {
                 unit.performAttack(target);
-                cooldownTimer = 0;
+                cooldownTimer -= unit.getAttackCooldown();
             }
         }
         return this;

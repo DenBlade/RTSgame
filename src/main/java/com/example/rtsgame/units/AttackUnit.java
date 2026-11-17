@@ -8,6 +8,8 @@ import com.example.rtsgame.units.pathfinding.Pathfinding;
 
 public class AttackUnit extends Unit {
     private Damageable target;
+    private Damageable retaliationTarget;
+
     private int attackDamage;
     private double attackRange;
     private double attackCooldown;
@@ -21,11 +23,12 @@ public class AttackUnit extends Unit {
         return new AttackUnit("/units/swordman/MiniSwordMan.png", new AnimationData[]{Config.SWORDSMAN_IDLE_ANIM, Config.SWORDSMAN_WALK_ANIM, Config.SWORDSMAN_DEATH_ANIM, Config.SWORDSMAN_ATTACK_ANIM}, mapManager, Config.SWORDSMAN_MAX_HEALTH, Config.SWORDSMAN_MOVEMENT_SPEED, x, y, ownByAI, 32, 32, 1.5, Config.SWORDSMAN_ATTACK_DAMAGE, Config.SWORDSMAN_ATTACK_RANGE, Config.SWORDSMAN_ATTACK_COOLDOWN);
     }
     @Override
-    protected void setupStateMachine() { // <--- ДОБАВЛЕНО: настройка FSM для AttackUnit
+    protected void setupStateMachine() {
         State<AttackUnit> idleState = new IdleState<>();
         State<AttackUnit> movingState = new MovingState<>();
         State<AttackUnit> attackState = new AttackState();
         State<AttackUnit> deadState = new DeadState<>();
+        State<AttackUnit> selfdefendState = new SelfdefendState();
 
         stateMachine = new StateMachine<>(this, idleState);
 
@@ -33,21 +36,36 @@ public class AttackUnit extends Unit {
 
         Transition<AttackUnit> movingFromIdle = new Transition<>(Unit::hasPath, movingState);
         Transition<AttackUnit> attackFromIdle = new Transition<>((unit) -> unit.hasTarget() && unit.isTargetInAttackRange(), attackState);
-        idleState.addTransition(dead);
+        Transition<AttackUnit> selfdefendFromIdle = new Transition<>((unit) -> unit.hasRetaliationTarget() && unit.isRetaliationTargetInRange(), selfdefendState);
+
         idleState.addTransition(attackFromIdle);
         idleState.addTransition(movingFromIdle);
+        idleState.addTransition(selfdefendFromIdle);
+        idleState.addTransition(dead);
+
+        Transition<AttackUnit> idleFromSelfdefend = new Transition<>((unit) -> !unit.hasRetaliationTarget() || !unit.isRetaliationTargetInRange(), idleState);
+        Transition<AttackUnit> attackFromSelfdefend = new Transition<>((unit) -> unit.hasTarget() && unit.isTargetInAttackRange(), attackState);
+        Transition<AttackUnit> movingFromSelfdefend = new Transition<>(Unit::hasPath, movingState);
+
+        selfdefendState.addTransition(idleFromSelfdefend);
+        selfdefendState.addTransition(attackFromSelfdefend);
+        selfdefendState.addTransition(movingFromSelfdefend);
+        selfdefendState.addTransition(dead);
 
         Transition<AttackUnit> attackFromMoving = new Transition<>((unit) -> unit.hasTarget() && unit.isTargetInAttackRange(), attackState);
         Transition<AttackUnit> idleFromMoving = new Transition<>(Unit::isFinishedMoving, idleState);
-        movingState.addTransition(dead);
+
         movingState.addTransition(attackFromMoving);
         movingState.addTransition(idleFromMoving);
+        movingState.addTransition(dead);
 
         Transition<AttackUnit> idleFromAttack = new Transition<>((unit) -> !unit.hasTarget() || unit.getTarget().isDestroyed(), idleState);
         Transition<AttackUnit> movingFromAttack = new Transition<>((unit) -> unit.hasPath() || (unit.hasTarget() && !unit.isTargetInAttackRange()), movingState);
-        attackState.addTransition(dead);
+
         attackState.addTransition(idleFromAttack);
         attackState.addTransition(movingFromAttack);
+        attackState.addTransition(dead);
+
     }
 
     @Override
@@ -78,13 +96,36 @@ public class AttackUnit extends Unit {
 
     public void performAttack(Damageable target) {
         if (target != null && !target.isDestroyed()) {
-            target.takeDamage(attackDamage);
+            target.takeDamage(attackDamage, this);
         }
     }
 
     public boolean isTargetInAttackRange() {
         if (target == null || target.isDestroyed()) return false;
-        return target.getDistanceTo(getCenterX(), getBottomY()) <= attackRange;
+        return target.getDistanceTo(getCenterX(), getCenterY()) <= attackRange;
+    }
+
+    @Override
+    public void takeDamage(int damage, Damageable attacker) {
+        super.takeDamage(damage, attacker);
+        if (!hasTarget()){
+            this.retaliationTarget = attacker;
+        }
+    }
+
+    public boolean isRetaliationTargetInRange() {
+        if (retaliationTarget == null || retaliationTarget.isDestroyed()) return false;
+        return retaliationTarget.getDistanceTo(getCenterX(), getCenterY()) <= attackRange;
+    }
+
+    public Damageable getRetaliationTarget() {
+        return retaliationTarget;
+    }
+    public boolean hasRetaliationTarget() {
+        return retaliationTarget != null;
+    }
+    public void clearRetaliationTarget() {
+        this.retaliationTarget = null;
     }
 
     public Damageable getTarget() { return target; }

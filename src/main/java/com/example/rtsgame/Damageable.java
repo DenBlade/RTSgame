@@ -1,7 +1,7 @@
 package com.example.rtsgame;
 
 public interface Damageable {
-    void takeDamage(int damage);
+    void takeDamage(int damage, Damageable attacker);
     boolean ownByAi();
     boolean isDestroyed();
     double getCenterX();
