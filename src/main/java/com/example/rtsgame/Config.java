@@ -13,7 +13,7 @@ public class Config {
     public static final double CAMERA_MOVEMENT_SPEED = 8;
     public static final double CAMERA_MOVEMENT_STEP = 15;
 
-    public static final boolean ENABLE_FOW = true; // debug purposes
+    public static final boolean ENABLE_FOW = false; // debug purposes
     public static final int BUILDING_VISION_RADIUS = 2;
 
     public static final int UNIT_VISION_RADIUS = 2;

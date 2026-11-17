@@ -122,9 +122,16 @@ public class WorkerUnit extends Unit implements ActionProvider {
         }
     }
     public void gatherAt(ResourceTile resourceTile) {
+        if (resourceTile.isOccupied()) {
+            System.out.println("This resource tile is already occupied!");
+            return;
+        }
         double[] coords = resourceTile.getWorldCoordinates();
-        setupPath(coords[0], coords[1]);
+        if(!setupPath(coords[0], coords[1])){
+            return;
+        }
         this.assignedResourceTile = resourceTile;
+        resourceTile.assignWorker(this);
     }
 
     public boolean buildAt(GameWorld gameWorld,BuildingType type, double x, double y) {
@@ -177,7 +184,15 @@ public class WorkerUnit extends Unit implements ActionProvider {
     }
 
     public void clearAssignedResourceTile() {
+        if(assignedResourceTile != null){
+            assignedResourceTile.releaseWorker();
+        }
         assignedResourceTile = null;
+    }
+    @Override
+    public void cleanup(){
+        clearAssignedResourceTile();
+        clearConstructionTask();
     }
 
     public ResourceTile getAssignedResourceTile() {
